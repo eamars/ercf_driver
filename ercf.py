@@ -126,10 +126,11 @@ class ERCF(object):
             raise self.printer.command_error(msg)
 
     def servo_up(self):
-        self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(self.servo_name,
+        servo_name = self.servo_name.split()[1]
+        self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                 self.servo_up_angle))
         time.sleep(0.25 + self.extra_servo_dwell_up)
-        self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(self.servo_name))
+        self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
     def servo_down(self, gear_meshing=True):
         pass
