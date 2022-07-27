@@ -86,6 +86,10 @@ class ERCF(object):
                                     self.cmd_ERCF_CALIBRATE_SYSTEM_LENGTH,
                                     desc='Execute the calibration routine on the current tool')
 
+        # Register event
+        self.printer.register_event_handler('klippy:connect', self.handle_connect)
+
+
     def handle_connect(self):
         self.toolhead = self.printer.lookup_object('toolhead')
         self.gear_stepper = self.printer.lookup_object(self.gear_stepper_name)
