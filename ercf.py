@@ -71,7 +71,7 @@ class ERCF(object):
         self.servo_up_angle = config.getfloat('servo_down_angle')
         self.extra_servo_dwell_up = config.getfloat('extra_servo_dwell_up', 0)
 
-        self.variable_path = config.getfloat('variable_path')
+        self.variable_path = config.get('variable_path')
         self.all_variables = {}
         self.load_variables()
 
