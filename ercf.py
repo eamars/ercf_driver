@@ -332,3 +332,7 @@ class ERCF(object):
         self.all_variables['extruder_to_selector_length'] = extruder_to_selector_length
 
         self.save_variables()
+
+
+def load_config(config):
+    return ERCF(config)
