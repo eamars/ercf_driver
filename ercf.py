@@ -107,6 +107,20 @@ class ERCF(object):
             raise self.printer.command_error(msg)
         self.all_variables = allvars
 
+    def save_variables(self):
+        varfile = configparser.ConfigParser()
+        varfile.add_section('Variables')
+        for name, value in sorted(self.all_variables):
+            varfile.set('Variables', name, repr(value))
+
+        try:
+            with open(self.variable_path, 'w') as fp:
+                varfile.write(fp)
+        except:
+            msg = "Unable to write to config file"
+            logging.exception(msg)
+            raise self.printer.command_error(msg)
+
     def servo_up(self):
         self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(self.servo_name,
                                                                                 self.servo_up_angle))
@@ -152,8 +166,8 @@ class ERCF(object):
         calibrate_move_distance_per_step = 1  # 1mm
 
         # Variables to dump to Vars
-        hotend_to_sensor_length = None
-        hotend_to_extruder_length = None
+        nozzle_to_sensor_length = None
+        nozzle_to_extruder_length = None
         sensor_to_extruder_length = None
         extruder_to_selector_length = None
 
@@ -193,18 +207,18 @@ class ERCF(object):
             ))
 
             if not filament_present:
-                hotend_to_sensor_length = stage_1_move_distance
+                nozzle_to_sensor_length = stage_1_move_distance
                 break
             elif not filament_moved:
-                hotend_to_extruder_length = stage_1_move_distance
+                nozzle_to_extruder_length = stage_1_move_distance
                 break
 
         ############
         # STAGE 2a #
         ############
-        # At stage 2a the toolhead shall retract if hotend_to_sensor_length is detected, until
+        # At stage 2a the toolhead shall retract if nozzle_to_sensor_length is detected, until
         #   - The filament is not moving
-        if hotend_to_sensor_length is not None:
+        if nozzle_to_sensor_length is not None:
             stage_2_move_distance = 0
             self.gcode.run_script_from_command('G92 E0')
             toolhead_position = self.toolhead.get_position()
@@ -237,10 +251,10 @@ class ERCF(object):
         ############
         # STAGE 2b #
         ############
-        # At stage 2b the gear stepper shall retract if hotend_to_extruder_length is detected, until
+        # At stage 2b the gear stepper shall retract if nozzle_to_extruder_length is detected, until
         #   - The toolhead filament sensor is not triggered or
         #   - The filament is not moving (error condition)
-        if hotend_to_extruder_length is not None:
+        if nozzle_to_extruder_length is not None:
             stage_2_move_distance = 0
             while True:
                 # Retract the move distance
@@ -301,19 +315,20 @@ class ERCF(object):
         ############
         # Finalize #
         ############
-        hotend_to_sensor_length = None
-        hotend_to_extruder_length = None
-        sensor_to_extruder_length = None
-        extruder_to_selector_length = None
-
         gcmd.respond_info('Calibrated data:\n'
                           'Hotend to sensor length: {}\n'
                           'Hotend to extruder length: {}\n'
                           'Sensor to extruder length: {}\n'
                           'Extruder to selector_length: {}\n'
-                          .format(hotend_to_sensor_length,
-                                  hotend_to_extruder_length,
+                          .format(nozzle_to_sensor_length,
+                                  nozzle_to_extruder_length,
                                   sensor_to_extruder_length,
                                   extruder_to_selector_length))
 
-        # TODO: Save to VARS
+        # Save to VARs
+        self.all_variables['nozzle_to_sensor_length'] = nozzle_to_sensor_length
+        self.all_variables['nozzle_to_extruder_length'] = nozzle_to_extruder_length
+        self.all_variables['sensor_to_extruder_length'] = sensor_to_extruder_length
+        self.all_variables['extruder_to_selector_length'] = extruder_to_selector_length
+
+        self.save_variables()
