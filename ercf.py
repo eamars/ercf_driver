@@ -187,8 +187,8 @@ class ERCF(object):
     def cmd_ERCF_CALIBRATE_COMPONENT_LENGTH(self, gcmd):
         try:
             self.calibrate_component_length(gcmd)
-        except RuntimeError as e:
-            self.gcode.respond_info('Failed to calibrate the system length: {}'.format(e))
+        finally:
+            self.servo_up()
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
@@ -251,10 +251,13 @@ class ERCF(object):
                 calibrate_move_distance_per_step, filament_move_distance, filament_moved
             ))
 
-            if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
-                nozzle_to_sensor_length = stage_1_move_distance
-                gcmd.respond_info('Stage 1: Filament is extracted passing the toolhead sensor')
-                break
+            if self.toolhead_sensor:
+                filament_present = bool(self.toolhead_sensor.runout_helper.filament_present)
+                gcmd.respond_info('Stage 1: filament present: {}'.format(filament_present))
+                if not filament_present:
+                    nozzle_to_sensor_length = stage_1_move_distance
+                    gcmd.respond_info('Stage 1: Filament is extracted passing the toolhead sensor')
+                    break
 
             if not filament_moved:
                 nozzle_to_extruder_length = stage_1_move_distance
@@ -391,6 +394,8 @@ class ERCF(object):
         self.all_variables['calibrated_extruder_to_selector_length'] = extruder_to_selector_length
 
         self.save_variables()
+
+        self.servo_up()
 
 
 def load_config(config):
