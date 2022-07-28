@@ -66,10 +66,12 @@ class ERCF(object):
         self.short_moves_speed = config.getfloat('short_moves_speed', 25.)
         self.short_moves_accel = config.getfloat('short_moves_accel', 400.)
         self.gear_stepper_long_move_threshold = config.getfloat('gear_stepper_long_move_threshold', 70)
+        self.gear_stepper_accel = config.getfloat('gear_stepper_accel', 0)
 
         self.servo_up_angle = config.getfloat('servo_up_angle')
-        self.servo_up_angle = config.getfloat('servo_down_angle')
+        self.servo_down_angle = config.getfloat('servo_down_angle')
         self.extra_servo_dwell_up = config.getfloat('extra_servo_dwell_up', 0)
+        self.extra_servo_dwell_down = config.getfloat('extra_servo_dwell_down', 0)
 
         self.variable_path = config.get('variable_path')
         self.all_variables = {}
@@ -87,7 +89,10 @@ class ERCF(object):
                                     desc='Execute the calibration routine on the current tool')
         self.gcode.register_command('ERCF_SERVO_UP',
                                     self.cmd_ERCF_SERVO_UP,
-                                    desc='Lift the servo')
+                                    desc='Lift the servo arm to release the gear')
+        self.gcode.register_command('ERCF_SERVO_UP',
+                                    self.cmd_ERCF_SERVO_UP,
+                                    desc='Press the servo arm to engage the gear')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -132,6 +137,9 @@ class ERCF(object):
     def cmd_ERCF_SERVO_UP(self, gcmd):
         self.servo_up()
 
+    def cmd_ERCF_SERVO_DOWN(self, gcmd):
+        self.servo_down()
+
     def servo_up(self):
         servo_name = self.servo_name.split()[1]
         self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
@@ -139,8 +147,23 @@ class ERCF(object):
         time.sleep(0.25 + self.extra_servo_dwell_up)
         self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
-    def servo_down(self, gear_meshing=True):
-        pass
+    def servo_down(self):
+        servo_name = self.servo_name.split()[1]
+
+        # do the gear meshing to ensure the proper alignment of the selector gear
+        self.gear_stepper.do_set_position(0)
+        self.gear_stepper.do_move(0.5, speed=25, accel=self.gear_stepper_accel)
+
+        self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
+                                                                                self.servo_down_angle))
+        time.sleep(0.2)
+
+        self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
+        time.sleep(0.1)
+        self.gear_stepper.do_move(-0.5, speed=25, accel=self.gear_stepper_accel)
+        time.sleep(0.1 + self.extra_servo_dwell_down)
+        self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
+        self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
     def gear_stepper_move_wait(self, dist, wait=True, speed=None, accel=None):
         self.gear_stepper.do_set_position(0.)
