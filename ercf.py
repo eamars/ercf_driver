@@ -5,6 +5,7 @@ import configparser
 import logging
 import ast
 import time
+from contextlib import contextmanager
 
 
 class EncoderCounter:
@@ -85,15 +86,21 @@ class ERCF(object):
 
         # GCode commands
         self.gcode = self.printer.lookup_object('gcode')
-        self.gcode.register_command('ERCF_CALIBRATE_COMPONENT_LENGTH',
+        self.gcode.register_command('_ERCF_CALIBRATE_COMPONENT_LENGTH',
                                     self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
                                     desc='Execute the calibration routine on the current tool')
-        self.gcode.register_command('ERCF_SERVO_UP',
+        self.gcode.register_command('_ERCF_SERVO_UP',
                                     self.cmd_ERCF_SERVO_UP,
                                     desc='Lift the servo arm to release the gear')
-        self.gcode.register_command('ERCF_SERVO_DOWN',
+        self.gcode.register_command('_ERCF_SERVO_DOWN',
                                     self.cmd_ERCF_SERVO_DOWN,
                                     desc='Press the servo arm to engage the gear')
+        self.gcode.register_command('_ERCF_LOAD',
+                                    self.cmd_ERCF_LOAD,
+                                    desc='Load the filament to the nozzle')
+        self.gcode.register_command('_ERCF_UNLOAD',
+                                    self.cmd_ERCF_UNLOAD,
+                                    desc='Unload the filament back to the selector')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -106,8 +113,9 @@ class ERCF(object):
         if self.toolhead_sensor_name is not None:
             self.toolhead_sensor = self.printer.lookup_object(self.toolhead_sensor_name)
 
-        # Initialize status
+        # Initialize state machine status
         self._servo_status = None
+        self._ercf_status = None
 
     def load_variables(self):
         allvars = {}
@@ -137,11 +145,34 @@ class ERCF(object):
             logging.exception(msg)
             raise self.printer.command_error(msg)
 
+    @contextmanager
+    def _ercf_move_guard(self, always_servo_up=True):
+        try:
+            yield
+        finally:
+            if always_servo_up:
+                self.servo_up()
+
+            # Reset the extruder
+            self.gcode.run_script_from_command('G92 E0')
+
     def cmd_ERCF_SERVO_UP(self, gcmd):
         self.servo_up()
 
     def cmd_ERCF_SERVO_DOWN(self, gcmd):
         self.servo_down()
+
+    def cmd_ERCF_CALIBRATE_COMPONENT_LENGTH(self, gcmd):
+        with self._ercf_move_guard():
+            self.calibrate_component_length(gcmd)
+
+    def cmd_ERCF_LOAD(self, gcmd):
+        with self._ercf_move_guard():
+            self.ercf_load(gcmd)
+
+    def cmd_ERCF_UNLOAD(self, gcmd):
+        with self._ercf_move_guard():
+            self.ercf_unload(gcmd)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -185,11 +216,26 @@ class ERCF(object):
         if wait :
             self.toolhead.wait_moves()
 
-    def cmd_ERCF_CALIBRATE_COMPONENT_LENGTH(self, gcmd):
-        try:
-            self.calibrate_component_length(gcmd)
-        finally:
-            self.servo_up()
+    def ercf_load(self, gcmd):
+        """
+        Determine current position:
+         * If toolhead sensor is triggered, the filament tip is
+            * Between the nozzle and extruder (if calibrated_extruder_to_sensor_length is positive)
+            * Between the extruder and the selector (if calibrated_extruder_to_sensor_length is negative)
+            -> Retract until the toolhead sensor is empty, then extrude from current position
+         * If toolhead sensor is not triggered or not present, apply few mm of extrusion from the extruder
+            * If moved, then the filament tip is between the nozzle to the extruder
+                -> Retract until the filament doesn't move anymore, then extrude from current position
+            * If not moved, then the filament tip is between the extruder to the selector
+                -> Retract until the filament doesn't move anymore, then continue next step
+         * Extrude few mm of filament from gear stepper
+            * If moved, then retract until not moving anymore.
+            * If not moved, then extrude from the gear stepper
+        """
+        pass
+
+    def ercf_unload(self, gcmd):
+        pass
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
@@ -404,7 +450,7 @@ class ERCF(object):
         self.all_variables['calibrated_extruder_to_selector_length'] = extruder_to_selector_length
 
         self.save_variables()
-
+        self.gcode.run_script_from_command('G92 E0')
         self.servo_up()
 
 
