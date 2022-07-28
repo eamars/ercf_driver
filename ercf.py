@@ -82,8 +82,8 @@ class ERCF(object):
 
         # GCode commands
         self.gcode = self.printer.lookup_object('gcode')
-        self.gcode.register_command('ERCF_CALIBRATE_SYSTEM_LENGTH',
-                                    self.cmd_ERCF_CALIBRATE_SYSTEM_LENGTH,
+        self.gcode.register_command('ERCF_CALIBRATE_COMPONENT_LENGTH',
+                                    self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
                                     desc='Execute the calibration routine on the current tool')
 
         # Register event
@@ -149,13 +149,13 @@ class ERCF(object):
         if wait :
             self.toolhead.wait_moves()
 
-    def cmd_ERCF_CALIBRATE_SYSTEM_LENGTH(self, gcmd):
+    def cmd_ERCF_CALIBRATE_COMPONENT_LENGTH(self, gcmd):
         try:
-            self.ercf_calibrate_system_length(gcmd)
+            self.calibrate_component_length(gcmd)
         except RuntimeError as e:
             self.gcode.respond_info('Failed to calibrate the system length: {}'.format(e))
 
-    def ercf_calibrate_system_length(self, gcmd):
+    def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
                           'filament from nozzle to the ERCF selector')
 
