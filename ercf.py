@@ -115,7 +115,7 @@ class ERCF(object):
     def save_variables(self):
         varfile = configparser.ConfigParser()
         varfile.add_section('Variables')
-        for name, value in sorted(self.all_variables):
+        for name, value in sorted(self.all_variables.items()):
             varfile.set('Variables', name, repr(value))
 
         try:
