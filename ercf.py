@@ -342,6 +342,10 @@ class ERCF(object):
         ###########
         # STAGE 3 #
         ###########
+        # Sanity check
+        if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
+            raise self.printer.command_error('Stage 3: Filament is still inside the toolhead while engaging the ERCF gear')
+
         # At stage 3 the gear stepper shall retract until the filament is retract below the selector
         stage_3_move_distance = 0
         self.servo_down()
