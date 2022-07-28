@@ -198,7 +198,7 @@ class ERCF(object):
 
         # Sanity check: the toolhead sensor should trigger
         if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
-            raise RuntimeError('Filament is not loaded to the toolhead, or the filament sensor is not triggering')
+            raise self.printer.command_error('Filament is not loaded to the toolhead, or the filament sensor is not triggering')
         elif self.toolhead_sensor is None:
             gcmd.respond_info('Going to run the toolhead sensorless calibration')
 
@@ -244,16 +244,17 @@ class ERCF(object):
             if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
-            logging.debug('Stage 1 Requested {},Filament measured move: {}'.format(
+            gcmd.respond_info('Stage 1: Requested {},Filament measured move: {}'.format(
                 calibrate_move_distance_per_step, filament_move_distance
             ))
 
             if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
                 nozzle_to_sensor_length = stage_1_move_distance
-                logging.debug('Filament is extracted passing the toolhead sensor')
+                gcmd.respond_info('Stage 1: Filament is extracted passing the toolhead sensor')
                 break
             elif not filament_moved:
                 nozzle_to_extruder_length = stage_1_move_distance
+                gcmd.respond_info('Stage 1: Filament passes the extruder')
                 break
 
         ############
@@ -283,11 +284,12 @@ class ERCF(object):
                 if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                     filament_moved = False
 
-                logging.debug('Stage 2a Requested {}, Filament measured move: {}'.format(
+                gcmd.respond_info('Stage 2a: Requested {}, Filament measured move: {}'.format(
                     calibrate_move_distance_per_step, filament_move_distance
                 ))
 
                 if not filament_moved:
+                    gcmd.respond_info('Stage 2a: Filament passes the extruder')
                     sensor_to_extruder_length = stage_2_move_distance
                     break
 
@@ -317,18 +319,19 @@ class ERCF(object):
                 if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                     filament_moved = False
 
-                logging.debug('Stage 2a Requested {}, Filament present: {}, Filament measured move: {}'.format(
+                logging.debug('Stage 2b: Requested {}, Filament present: {}, Filament measured move: {}'.format(
                     calibrate_move_distance_per_step, filament_present, filament_move_distance
                 ))
 
                 if not filament_present:
                     # Yes we are using a negative value to represent the extruder to sensor length
                     # if the sensor is installed between the extruder and the gear stepper
+                    gcmd.respond_info('Stage 2b: Filament passes the sensor')
                     sensor_to_extruder_length = -stage_2_move_distance
                     break
 
                 if not filament_moved:
-                    raise RuntimeError("Filament ")
+                    raise self.printer.command_error('Stage 2b: Filament is not moving')
 
         ###########
         # STAGE 3 #
@@ -350,12 +353,13 @@ class ERCF(object):
             if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
-            logging.debug('Stage 3 Requested {}, Filament measured move: {}'.format(
+            gcmd.respond_info('Stage 3: Requested {}, Filament measured move: {}'.format(
                 calibrate_move_distance_per_step, filament_move_distance
             ))
 
             if not filament_moved:
                 extruder_to_selector_length = stage_3_move_distance
+                gcmd.respond_info('Stage 3: Filament passes the ERCF gear')
                 break
 
         ############
