@@ -85,6 +85,9 @@ class ERCF(object):
         self.gcode.register_command('ERCF_CALIBRATE_COMPONENT_LENGTH',
                                     self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
                                     desc='Execute the calibration routine on the current tool')
+        self.gcode.register_command('ERCF_SERVO_UP',
+                                    self.cmd_ERCF_SERVO_UP,
+                                    desc='Lift the servo')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -125,6 +128,9 @@ class ERCF(object):
             msg = "Unable to write to config file"
             logging.exception(msg)
             raise self.printer.command_error(msg)
+
+    def cmd_ERCF_SERVO_UP(self, gcmd):
+        self.servo_up()
 
     def servo_up(self):
         servo_name = self.servo_name.split()[1]
