@@ -97,7 +97,6 @@ class ERCF(object):
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
 
-
     def handle_connect(self):
         self.toolhead = self.printer.lookup_object('toolhead')
         self.gear_stepper = self.printer.lookup_object(self.gear_stepper_name)
@@ -105,6 +104,9 @@ class ERCF(object):
         self.servo = self.printer.lookup_object(self.servo_name)
         if self.toolhead_sensor is not None:
             self.toolhead_sensor = self.printer.lookup_object(self.toolhead_sensor_name)
+
+        # Initialize status
+        self._servo_status = None
 
     def load_variables(self):
         allvars = {}
@@ -141,29 +143,33 @@ class ERCF(object):
         self.servo_down()
 
     def servo_up(self):
-        servo_name = self.servo_name.split()[1]
-        self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
-                                                                                self.servo_up_angle))
-        time.sleep(0.25 + self.extra_servo_dwell_up)
-        self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
+        if self._servo_status != 'up':
+            self._servo_status = 'up'
+            servo_name = self.servo_name.split()[1]
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
+                                                                                    self.servo_up_angle))
+            time.sleep(0.25 + self.extra_servo_dwell_up)
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
     def servo_down(self):
-        servo_name = self.servo_name.split()[1]
+        if self._servo_status != 'down':
+            self._servo_status = 'down'
+            servo_name = self.servo_name.split()[1]
 
-        # do the gear meshing to ensure the proper alignment of the selector gear
-        self.gear_stepper.do_set_position(0)
-        self.gear_stepper.do_move(0.5, speed=25, accel=self.gear_stepper_accel)
+            # do the gear meshing to ensure the proper alignment of the selector gear
+            self.gear_stepper.do_set_position(0)
+            self.gear_stepper.do_move(0.5, speed=25, accel=self.gear_stepper_accel)
 
-        self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
-                                                                                self.servo_down_angle))
-        time.sleep(0.2)
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
+                                                                                    self.servo_down_angle))
+            time.sleep(0.2)
 
-        self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
-        time.sleep(0.1)
-        self.gear_stepper.do_move(-0.5, speed=25, accel=self.gear_stepper_accel)
-        time.sleep(0.1 + self.extra_servo_dwell_down)
-        self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
-        self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
+            self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
+            time.sleep(0.1)
+            self.gear_stepper.do_move(-0.5, speed=25, accel=self.gear_stepper_accel)
+            time.sleep(0.1 + self.extra_servo_dwell_down)
+            self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
     def gear_stepper_move_wait(self, dist, wait=True, speed=None, accel=None):
         self.gear_stepper.do_set_position(0.)
@@ -193,7 +199,7 @@ class ERCF(object):
         # Sanity check: the toolhead sensor should trigger
         if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
             raise RuntimeError('Filament is not loaded to the toolhead, or the filament sensor is not triggering')
-        else:
+        elif self.toolhead_sensor is None:
             gcmd.respond_info('Going to run the toolhead sensorless calibration')
 
         # Form the tip to begin with
@@ -293,6 +299,7 @@ class ERCF(object):
         #   - The toolhead filament sensor is not triggered or
         #   - The filament is not moving (error condition)
         if self.toolhead_sensor and nozzle_to_extruder_length is not None:
+            self.servo_down()
             stage_2_move_distance = 0
             while True:
                 # Retract the move distance
@@ -328,6 +335,7 @@ class ERCF(object):
         ###########
         # At stage 3 the gear stepper shall retract until the filament is retract below the selector
         stage_3_move_distance = 0
+        self.servo_down()
         while True:
             stage_3_move_distance += calibrate_move_distance_per_step
             self.motion_counter.reset_counts()
