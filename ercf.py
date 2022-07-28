@@ -252,7 +252,8 @@ class ERCF(object):
                 nozzle_to_sensor_length = stage_1_move_distance
                 gcmd.respond_info('Stage 1: Filament is extracted passing the toolhead sensor')
                 break
-            elif not filament_moved:
+
+            if not filament_moved:
                 nozzle_to_extruder_length = stage_1_move_distance
                 gcmd.respond_info('Stage 1: Filament passes the extruder')
                 break
