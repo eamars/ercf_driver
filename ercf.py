@@ -67,6 +67,7 @@ class ERCF(object):
         self.short_moves_accel = config.getfloat('short_moves_accel', 400.)
         self.gear_stepper_long_move_threshold = config.getfloat('gear_stepper_long_move_threshold', 70)
         self.gear_stepper_accel = config.getfloat('gear_stepper_accel', 0)
+        self.calibrate_move_distance_per_step = config.getfloat('calibrate_move_distance_per_step', 3)
 
         self.servo_up_angle = config.getfloat('servo_up_angle')
         self.servo_down_angle = config.getfloat('servo_down_angle')
@@ -205,9 +206,6 @@ class ERCF(object):
         # Form the tip to begin with
         self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
 
-        # Initialize constant variables
-        calibrate_move_distance_per_step = 5  # 1mm
-
         # Variables to dump to Vars
         nozzle_to_sensor_length = None
         nozzle_to_extruder_length = None
@@ -230,10 +228,10 @@ class ERCF(object):
 
         while True:
             # Move
-            toolhead_position[3] -= calibrate_move_distance_per_step
+            toolhead_position[3] -= self.calibrate_move_distance_per_step
 
             # We rely on the theoretical move distance as this is actuated by the extruder
-            stage_1_move_distance += calibrate_move_distance_per_step
+            stage_1_move_distance += self.calibrate_move_distance_per_step
             self.motion_counter.reset_counts()
 
             # Retract the move distance
@@ -242,13 +240,14 @@ class ERCF(object):
 
             # Check the filament sensor status
             filament_move_distance = self.motion_counter.get_distance()
+
             filament_moved = True
             # If filament moved less than half of requested length then we consider not moving
-            if filament_move_distance < calibrate_move_distance_per_step / 2.0:
+            if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
             gcmd.respond_info('Stage 1: Requested {}, filament measured move: {}, filament moved: {}'.format(
-                calibrate_move_distance_per_step, filament_move_distance, filament_moved
+                self.calibrate_move_distance_per_step, filament_move_distance, filament_moved
             ))
 
             if self.toolhead_sensor:
@@ -276,9 +275,9 @@ class ERCF(object):
             self.gcode.run_script_from_command('G92 E0')
             toolhead_position = self.toolhead.get_position()
             while True:
-                toolhead_position[3] -= calibrate_move_distance_per_step
+                toolhead_position[3] -= self.calibrate_move_distance_per_step
 
-                stage_2_move_distance += calibrate_move_distance_per_step
+                stage_2_move_distance += self.calibrate_move_distance_per_step
                 self.motion_counter.reset_counts()
 
                 # Retract the move distance
@@ -289,11 +288,11 @@ class ERCF(object):
                 filament_move_distance = self.motion_counter.get_distance()
                 filament_moved = True
                 # If filament moved less than half of requested length then we consider not moving
-                if filament_move_distance < calibrate_move_distance_per_step / 2.0:
+                if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
                     filament_moved = False
 
                 gcmd.respond_info('Stage 2a: Requested {}, Filament measured move: {}'.format(
-                    calibrate_move_distance_per_step, filament_move_distance
+                    self.calibrate_move_distance_per_step, filament_move_distance
                 ))
 
                 if not filament_moved:
@@ -315,21 +314,21 @@ class ERCF(object):
             stage_2_move_distance = 0
             while True:
                 # Retract the move distance
-                stage_2_move_distance += calibrate_move_distance_per_step
+                stage_2_move_distance += self.calibrate_move_distance_per_step
                 self.motion_counter.reset_counts()
 
-                self.gear_stepper_move_wait(-calibrate_move_distance_per_step)
+                self.gear_stepper_move_wait(-self.calibrate_move_distance_per_step)
 
                 # Check the filament status
                 filament_present = bool(self.toolhead_sensor.runout_helper.filament_present)
                 filament_move_distance = self.motion_counter.get_distance()
                 filament_moved = True
                 # If filament moved less than half of requested length then we consider not moving
-                if filament_move_distance < calibrate_move_distance_per_step / 2.0:
+                if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
                     filament_moved = False
 
                 logging.debug('Stage 2b: Requested {}, Filament present: {}, Filament measured move: {}'.format(
-                    calibrate_move_distance_per_step, filament_present, filament_move_distance
+                    self.calibrate_move_distance_per_step, filament_present, filament_move_distance
                 ))
 
                 if not filament_present:
@@ -353,20 +352,20 @@ class ERCF(object):
         stage_3_move_distance = 0
         self.servo_down()
         while True:
-            stage_3_move_distance += calibrate_move_distance_per_step
+            stage_3_move_distance += self.calibrate_move_distance_per_step
             self.motion_counter.reset_counts()
 
-            self.gear_stepper_move_wait(-calibrate_move_distance_per_step)
+            self.gear_stepper_move_wait(-self.calibrate_move_distance_per_step)
 
             # Check filament status
             filament_move_distance = self.motion_counter.get_distance()
             filament_moved = True
             # If filament moved less than half of requested length then we consider not moving
-            if filament_move_distance < calibrate_move_distance_per_step / 2.0:
+            if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
             gcmd.respond_info('Stage 3: Requested {}, Filament measured move: {}'.format(
-                calibrate_move_distance_per_step, filament_move_distance
+                self.calibrate_move_distance_per_step, filament_move_distance
             ))
 
             if not filament_moved:
