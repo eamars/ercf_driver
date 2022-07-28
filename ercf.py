@@ -102,7 +102,7 @@ class ERCF(object):
         self.gear_stepper = self.printer.lookup_object(self.gear_stepper_name)
         self.selector_stepper = self.printer.lookup_object(self.selector_stepper_name)
         self.servo = self.printer.lookup_object(self.servo_name)
-        if self.toolhead_sensor is not None:
+        if self.toolhead_sensor_name is not None:
             self.toolhead_sensor = self.printer.lookup_object(self.toolhead_sensor_name)
 
         # Initialize status
