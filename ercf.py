@@ -244,7 +244,7 @@ class ERCF(object):
             if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
-            gcmd.respond_info('Stage 1: Requested {}, filament measured move: {}, filament moved'.format(
+            gcmd.respond_info('Stage 1: Requested {}, filament measured move: {}, filament moved: {}'.format(
                 calibrate_move_distance_per_step, filament_move_distance, filament_moved
             ))
 
