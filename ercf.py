@@ -52,7 +52,7 @@ class ERCF(object):
         self.selector_stepper_name = config.get('selector_stepper')
         self.servo_name = config.get('servo')
         self.servo = None
-        self.toolhead_sensor_name = config.get('toolhead_sensor')
+        self.toolhead_sensor_name = config.get('toolhead_sensor', None)
         self.toolhead_sensor = None
 
         self.encoder_pin_name = config.get('encoder_pin')
@@ -95,7 +95,8 @@ class ERCF(object):
         self.gear_stepper = self.printer.lookup_object(self.gear_stepper_name)
         self.selector_stepper = self.printer.lookup_object(self.selector_stepper_name)
         self.servo = self.printer.lookup_object(self.servo_name)
-        self.toolhead_sensor = self.printer.lookup_object(self.toolhead_sensor_name)
+        if self.toolhead_sensor is not None:
+            self.toolhead_sensor = self.printer.lookup_object(self.toolhead_sensor_name)
 
     def load_variables(self):
         allvars = {}
@@ -161,8 +162,10 @@ class ERCF(object):
         self.servo_up()
 
         # Sanity check: the toolhead sensor should trigger
-        if not bool(self.toolhead_sensor.runout_helper.filament_present):
+        if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
             raise RuntimeError('Filament is not loaded to the toolhead, or the filament sensor is not triggering')
+        else:
+            gcmd.respond_info('Going to run the toolhead sensorless calibration')
 
         # Form the tip to begin with
         self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
@@ -199,7 +202,6 @@ class ERCF(object):
             self.toolhead.wait_moves()
 
             # Check the filament sensor status
-            filament_present = bool(self.toolhead_sensor.runout_helper.filament_present)
             filament_move_distance = self.motion_counter.get_distance()
             filament_move_diff = abs(filament_move_distance - calibrate_move_distance_per_step)
             filament_moved = True
@@ -207,12 +209,13 @@ class ERCF(object):
             if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
-            logging.debug('Stage 1 Requested {}, Filament present: {}, Filament measured move: {}'.format(
-                calibrate_move_distance_per_step, filament_present, filament_move_distance
+            logging.debug('Stage 1 Requested {},Filament measured move: {}'.format(
+                calibrate_move_distance_per_step, filament_move_distance
             ))
 
-            if not filament_present:
+            if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
                 nozzle_to_sensor_length = stage_1_move_distance
+                logging.debug('Filament is extracted passing the toolhead sensor')
                 break
             elif not filament_moved:
                 nozzle_to_extruder_length = stage_1_move_distance
@@ -256,10 +259,11 @@ class ERCF(object):
         ############
         # STAGE 2b #
         ############
-        # At stage 2b the gear stepper shall retract if nozzle_to_extruder_length is detected, until
+        # At stage 2b the gear stepper shall retract if nozzle_to_extruder_length is detected for the system without
+        # the toolhead sensor, until
         #   - The toolhead filament sensor is not triggered or
         #   - The filament is not moving (error condition)
-        if nozzle_to_extruder_length is not None:
+        if self.toolhead_sensor and nozzle_to_extruder_length is not None:
             stage_2_move_distance = 0
             while True:
                 # Retract the move distance
