@@ -206,7 +206,7 @@ class ERCF(object):
         self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
 
         # Initialize constant variables
-        calibrate_move_distance_per_step = 1  # 1mm
+        calibrate_move_distance_per_step = 5  # 1mm
 
         # Variables to dump to Vars
         nozzle_to_sensor_length = None
@@ -381,10 +381,10 @@ class ERCF(object):
                                   extruder_to_selector_length))
 
         # Save to VARs
-        self.all_variables['nozzle_to_sensor_length'] = nozzle_to_sensor_length
-        self.all_variables['nozzle_to_extruder_length'] = nozzle_to_extruder_length
-        self.all_variables['sensor_to_extruder_length'] = sensor_to_extruder_length
-        self.all_variables['extruder_to_selector_length'] = extruder_to_selector_length
+        self.all_variables['calibrated_nozzle_to_sensor_length'] = nozzle_to_sensor_length
+        self.all_variables['calibrated_nozzle_to_extruder_length'] = nozzle_to_extruder_length
+        self.all_variables['calibrated_sensor_to_extruder_length'] = sensor_to_extruder_length
+        self.all_variables['calibrated_extruder_to_selector_length'] = extruder_to_selector_length
 
         self.save_variables()
 
