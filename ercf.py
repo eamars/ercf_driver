@@ -220,6 +220,10 @@ class ERCF(object):
         # At stage 1 the toolhead shall retract, until
         #   - The toolhead filament sensor is not triggered or
         #   - The filament is not moving (filament sensor is installed between the ERCF and the extruder)
+        # This step will generate
+        #   - nozzle_to_sensor_length: IF the sensor stage is changed
+        #   - nozzle_to_extruder_length: IF the filament move passes the extruder (sensorless or the sensor is installed
+        #       before the extruder).
         stage_1_move_distance = 0
         self.gcode.run_script_from_command('G92 E0')
         toolhead_position = self.toolhead.get_position()
@@ -262,6 +266,8 @@ class ERCF(object):
         ############
         # At stage 2a the toolhead shall retract if nozzle_to_sensor_length is detected, until
         #   - The filament is not moving
+        # This stage shall look for
+        #   - sensor_to_extruder_length
         if nozzle_to_sensor_length is not None:
             stage_2_move_distance = 0
             self.gcode.run_script_from_command('G92 E0')
@@ -295,10 +301,12 @@ class ERCF(object):
         ############
         # STAGE 2b #
         ############
-        # At stage 2b the gear stepper shall retract if nozzle_to_extruder_length is detected for the system without
-        # the toolhead sensor, until
+        # At stage 2b the gear stepper shall retract if the nozzle to extruder length is found and will continue to
+        # look for the sensor, until
         #   - The toolhead filament sensor is not triggered or
         #   - The filament is not moving (error condition)
+        # This stage shall look for
+        #   - sensor_to_extruder_length: The distance between the extruder and the sensor, represented as a negative number
         if self.toolhead_sensor and nozzle_to_extruder_length is not None:
             self.servo_down()
             stage_2_move_distance = 0
@@ -363,8 +371,8 @@ class ERCF(object):
         # Finalize #
         ############
         gcmd.respond_info('Calibrated data:\n'
-                          'Hotend to sensor length: {}\n'
-                          'Hotend to extruder length: {}\n'
+                          'Nozzle to sensor length: {}\n'
+                          'Nozzle to extruder length: {}\n'
                           'Sensor to extruder length: {}\n'
                           'Extruder to selector_length: {}\n'
                           .format(nozzle_to_sensor_length,
