@@ -231,7 +231,7 @@ class ERCF(object):
             toolhead_position[3] -= self.calibrate_move_distance_per_step
 
             # We rely on the theoretical move distance as this is actuated by the extruder
-            stage_1_move_distance += self.calibrate_move_distance_per_step
+            # stage_1_move_distance += self.calibrate_move_distance_per_step
             self.motion_counter.reset_counts()
 
             # Retract the move distance
@@ -240,6 +240,7 @@ class ERCF(object):
 
             # Check the filament sensor status
             filament_move_distance = self.motion_counter.get_distance()
+            stage_1_move_distance += filament_move_distance
 
             filament_moved = True
             # If filament moved less than half of requested length then we consider not moving
@@ -277,7 +278,7 @@ class ERCF(object):
             while True:
                 toolhead_position[3] -= self.calibrate_move_distance_per_step
 
-                stage_2_move_distance += self.calibrate_move_distance_per_step
+                # stage_2_move_distance += self.calibrate_move_distance_per_step
                 self.motion_counter.reset_counts()
 
                 # Retract the move distance
@@ -286,6 +287,8 @@ class ERCF(object):
 
                 # Check the filament movement status
                 filament_move_distance = self.motion_counter.get_distance()
+                stage_2_move_distance += filament_move_distance
+
                 filament_moved = True
                 # If filament moved less than half of requested length then we consider not moving
                 if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
@@ -314,7 +317,7 @@ class ERCF(object):
             stage_2_move_distance = 0
             while True:
                 # Retract the move distance
-                stage_2_move_distance += self.calibrate_move_distance_per_step
+                # stage_2_move_distance += self.calibrate_move_distance_per_step
                 self.motion_counter.reset_counts()
 
                 self.gear_stepper_move_wait(-self.calibrate_move_distance_per_step)
@@ -322,6 +325,8 @@ class ERCF(object):
                 # Check the filament status
                 filament_present = bool(self.toolhead_sensor.runout_helper.filament_present)
                 filament_move_distance = self.motion_counter.get_distance()
+                stage_2_move_distance += filament_move_distance
+
                 filament_moved = True
                 # If filament moved less than half of requested length then we consider not moving
                 if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
@@ -352,13 +357,15 @@ class ERCF(object):
         stage_3_move_distance = 0
         self.servo_down()
         while True:
-            stage_3_move_distance += self.calibrate_move_distance_per_step
+            # stage_3_move_distance += self.calibrate_move_distance_per_step
             self.motion_counter.reset_counts()
 
             self.gear_stepper_move_wait(-self.calibrate_move_distance_per_step)
 
             # Check filament status
             filament_move_distance = self.motion_counter.get_distance()
+            stage_3_move_distance += filament_move_distance
+
             filament_moved = True
             # If filament moved less than half of requested length then we consider not moving
             if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
