@@ -238,10 +238,9 @@ class ERCF(object):
 
             # Check the filament sensor status
             filament_move_distance = self.motion_counter.get_distance()
-            filament_move_diff = abs(filament_move_distance - calibrate_move_distance_per_step)
             filament_moved = True
             # If filament moved less than half of requested length then we consider not moving
-            if filament_move_diff < calibrate_move_distance_per_step / 2.0:
+            if filament_move_distance < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
             gcmd.respond_info('Stage 1: Requested {}, filament measured move: {}, filament moved: {}'.format(
@@ -279,10 +278,9 @@ class ERCF(object):
 
                 # Check the filament movement status
                 filament_move_distance = self.motion_counter.get_distance()
-                filament_move_diff = abs(filament_move_distance - calibrate_move_distance_per_step)
                 filament_moved = True
                 # If filament moved less than half of requested length then we consider not moving
-                if filament_move_diff < calibrate_move_distance_per_step / 2.0:
+                if filament_move_distance < calibrate_move_distance_per_step / 2.0:
                     filament_moved = False
 
                 gcmd.respond_info('Stage 2a: Requested {}, Filament measured move: {}'.format(
@@ -314,10 +312,9 @@ class ERCF(object):
                 # Check the filament status
                 filament_present = bool(self.toolhead_sensor.runout_helper.filament_present)
                 filament_move_distance = self.motion_counter.get_distance()
-                filament_move_diff = abs(filament_move_distance - calibrate_move_distance_per_step)
                 filament_moved = True
                 # If filament moved less than half of requested length then we consider not moving
-                if filament_move_diff < calibrate_move_distance_per_step / 2.0:
+                if filament_move_distance < calibrate_move_distance_per_step / 2.0:
                     filament_moved = False
 
                 logging.debug('Stage 2b: Requested {}, Filament present: {}, Filament measured move: {}'.format(
@@ -348,10 +345,9 @@ class ERCF(object):
 
             # Check filament status
             filament_move_distance = self.motion_counter.get_distance()
-            filament_move_diff = abs(filament_move_distance - calibrate_move_distance_per_step)
             filament_moved = True
             # If filament moved less than half of requested length then we consider not moving
-            if filament_move_diff < calibrate_move_distance_per_step / 2.0:
+            if filament_move_distance < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
             gcmd.respond_info('Stage 3: Requested {}, Filament measured move: {}'.format(
