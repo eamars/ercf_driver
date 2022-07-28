@@ -90,8 +90,8 @@ class ERCF(object):
         self.gcode.register_command('ERCF_SERVO_UP',
                                     self.cmd_ERCF_SERVO_UP,
                                     desc='Lift the servo arm to release the gear')
-        self.gcode.register_command('ERCF_SERVO_UP',
-                                    self.cmd_ERCF_SERVO_UP,
+        self.gcode.register_command('ERCF_SERVO_DOWN',
+                                    self.cmd_ERCF_SERVO_DOWN,
                                     desc='Press the servo arm to engage the gear')
 
         # Register event
