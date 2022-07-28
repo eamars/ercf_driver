@@ -212,6 +212,7 @@ class ERCF(object):
         sensor_to_extruder_length = None
         extruder_to_selector_length = None
 
+        self.toolhead.wait_moves()
         time.sleep(3)
         self.motion_counter.reset_counts()
 
