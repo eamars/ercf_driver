@@ -244,8 +244,8 @@ class ERCF(object):
             if filament_move_diff < calibrate_move_distance_per_step / 2.0:
                 filament_moved = False
 
-            gcmd.respond_info('Stage 1: Requested {},Filament measured move: {}'.format(
-                calibrate_move_distance_per_step, filament_move_distance
+            gcmd.respond_info('Stage 1: Requested {}, filament measured move: {}, filament moved'.format(
+                calibrate_move_distance_per_step, filament_move_distance, filament_moved
             ))
 
             if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
