@@ -41,6 +41,10 @@ class EncoderCounter:
         self._counts = 0.
 
 
+class StopConditionException(Exception):
+    pass
+
+
 class ERCF(object):
     def __init__(self, config):
         self.config = config
@@ -73,6 +77,7 @@ class ERCF(object):
         self.extra_move_margin = config.getfloat('extra_move_margin', 100)
         self.long_move_distance = config.getfloat('long_move_distance', 10)
         self.short_move_distance = config.getfloat('short_move_distance', 3)
+        self.minimum_step_distance = config.getfloat('minimum_step_distance', 2)
         self.calibrate_move_distance_per_step = config.getfloat('calibrate_move_distance_per_step', 3)
 
         self.servo_up_angle = config.getfloat('servo_up_angle')
@@ -108,7 +113,10 @@ class ERCF(object):
                                     desc='Unload the filament back to the selector')
 
         self.gcode.register_command('_ERCF_UNLOAD_TO_TOOLHEAD_SENSOR',
-                                    self.cmd_ERCF_UNLOAD_TO_TOOLHEAD_SENSOR,
+                                    self.ercf_unload_to_toolhead_sensor,
+                                    desc='Unload the filament back to the selector')
+        self.gcode.register_command('_ERCF_LOAD_FROM_TOOLHEAD_SENSOR',
+                                    self.ercf_load_from_toolhead_sensor,
                                     desc='Unload the filament back to the selector')
 
         # Register event
@@ -183,10 +191,6 @@ class ERCF(object):
         with self._ercf_move_guard():
             self.ercf_unload(gcmd)
 
-    def cmd_ERCF_UNLOAD_TO_TOOLHEAD_SENSOR(self, gcmd):
-        with self._ercf_move_guard():
-            self.ercf_unload_to_toolhead_sensor(gcmd)
-
     def servo_up(self):
         if self._servo_status != 'up':
             self._servo_status = 'up'
@@ -226,8 +230,69 @@ class ERCF(object):
             accel = self.long_moves_accel if is_long_move \
                     else self.short_moves_accel
         self.gear_stepper.do_move(dist, speed, accel, True)
-        if wait :
+        if wait:
             self.toolhead.wait_moves()
+
+    def toolhead_move_wait(self, gcmd, target_move_distance, stop_on_filament_slip=True, initial_condition_callback=None, stop_condition_callback=None):
+        if stop_condition_callback is None:
+            stop_condition_callback = lambda x=None: x
+        if initial_condition_callback is None:
+            initial_condition_callback = lambda x=None: x
+
+        step_distance = self.long_move_distance
+
+        if target_move_distance >= 0:
+            direction = 1
+        else:
+            direction = -1
+
+        relative_step_distance = step_distance * direction
+
+        if step_distance >= self.long_move_distance:
+            speed = self.long_moves_speed
+        else:
+            speed = self.short_moves_speed
+
+        self.gcode.run_script_from_command('G92 E0')
+        toolhead_position = self.toolhead.get_position()
+        self.motion_counter.reset_counts()
+
+        accumulated_move_distance = 0
+        gcmd.respond_info('Requested move distance: {}'.format(target_move_distance))
+
+        prev_state = initial_condition_callback()
+
+        while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
+            # Move
+            self.motion_counter.reset_counts()
+            toolhead_position[3] += relative_step_distance
+            self.toolhead.manual_move(toolhead_position, speed)
+
+            # Check move distance
+            filament_move_distance = self.motion_counter.get_distance()
+            accumulated_move_distance += filament_move_distance
+
+            if stop_on_filament_slip and filament_move_distance < step_distance / 2.0:
+                raise self.printer.command_error('Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance))
+
+            # Check stop condition
+            try:
+                prev_state = stop_condition_callback(prev_state)
+            except StopConditionException:
+                break
+
+        # Now move the remaining distance
+        step_distance = abs(target_move_distance) - accumulated_move_distance
+        relative_step_distance = step_distance * direction
+        speed = self.short_moves_speed
+
+        self.motion_counter.reset_counts()
+        toolhead_position[3] += relative_step_distance
+        self.toolhead.manual_move(toolhead_position, speed)
+        filament_move_distance = self.motion_counter.get_distance()
+        accumulated_move_distance += filament_move_distance
+
+        return accumulated_move_distance * direction
 
     def ercf_unload_to_toolhead_sensor(self, gcmd):
         if not self.toolhead_sensor:
@@ -275,6 +340,20 @@ class ERCF(object):
 
         return accumulated_move_distance
 
+    def ercf_load_from_toolhead_sensor(self, gcmd):
+        if not self.toolhead_sensor:
+            raise self.printer.command_error('Filament sensor is not defined')
+
+
+        def stop_condition(prev_condition):
+            if self.toolhead_sensor.runout_helper.filament_present:
+                raise StopConditionException
+            return prev_condition
+
+        # Extrude until the toolhead sensor (should be relative short)
+        nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
+        self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, stop_condition_callback=stop_condition)
+
     def ercf_load(self, gcmd):
         """
         Determine current position:
@@ -294,6 +373,7 @@ class ERCF(object):
         if self.toolhead_sensor:
             if self.toolhead_sensor.runout_helper.filament_present:
                 self.servo_up()
+
 
 
     def ercf_unload(self, gcmd):
