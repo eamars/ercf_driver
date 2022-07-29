@@ -233,7 +233,7 @@ class ERCF(object):
         if wait:
             self.toolhead.wait_moves()
 
-    def toolhead_move_wait(self, gcmd, target_move_distance, step_distance=None, stop_on_filament_slip=True, initial_condition_callback=None, stop_condition_callback=None):
+    def toolhead_move_wait(self, gcmd, target_move_distance, step_distance=None, raise_on_filament_slip=True, initial_condition_callback=None, stop_condition_callback=None):
         if stop_condition_callback is None:
             stop_condition_callback = lambda x=None: x
         if initial_condition_callback is None:
@@ -273,8 +273,16 @@ class ERCF(object):
             filament_move_distance = self.motion_counter.get_distance()
             accumulated_move_distance += filament_move_distance
 
-            if stop_on_filament_slip and filament_move_distance < step_distance / 2.0:
-                raise self.printer.command_error('Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance))
+            gcmd.respond_info('Toolhead requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
+                              .format(target_move_distance, filament_move_distance, accumulated_move_distance))
+
+            if filament_move_distance < step_distance / 2.0:
+                msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
+                if raise_on_filament_slip:
+                    raise self.printer.command_error(msg)
+                else:
+                    gcmd.respond_info(msg)
+                    break
 
             # Check stop condition
             try:
@@ -359,6 +367,11 @@ class ERCF(object):
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
         self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance)
 
+    def ercf_unload_to_extruder(self, gcmd):
+        # Move the toolhead until the filament doesn't move anymore
+        retract_distance = self.all_variables.get('calibrated_sensor_to_extruder_length')
+        self.toolhead_move_wait(gcmd, -retract_distance, raise_on_filament_slip=False)
+
     def ercf_load(self, gcmd):
         """
         Determine current position:
@@ -375,9 +388,13 @@ class ERCF(object):
             * If moved, then retract until not moving anymore.
             * If not moved, then extrude from the gear stepper
         """
-        if self.toolhead_sensor:
-            if self.toolhead_sensor.runout_helper.filament_present:
-                self.servo_up()
+        if self.toolhead_sensor and self.toolhead_sensor.runout_helper.filament_present:
+            self.servo_up()
+            self.ercf_unload_to_toolhead_sensor(gcmd)
+            self.ercf_load_from_toolhead_sensor(gcmd)
+        else:
+            pass
+            #FIXME
 
 
 
