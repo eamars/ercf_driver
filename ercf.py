@@ -233,13 +233,14 @@ class ERCF(object):
         if wait:
             self.toolhead.wait_moves()
 
-    def toolhead_move_wait(self, gcmd, target_move_distance, stop_on_filament_slip=True, initial_condition_callback=None, stop_condition_callback=None):
+    def toolhead_move_wait(self, gcmd, target_move_distance, step_distance=None, stop_on_filament_slip=True, initial_condition_callback=None, stop_condition_callback=None):
         if stop_condition_callback is None:
             stop_condition_callback = lambda x=None: x
         if initial_condition_callback is None:
             initial_condition_callback = lambda x=None: x
 
-        step_distance = self.long_move_distance
+        if step_distance is None:
+            step_distance = self.long_move_distance
 
         if target_move_distance >= 0:
             direction = 1
@@ -281,6 +282,7 @@ class ERCF(object):
             except StopConditionException:
                 break
 
+        # TODO: Handle the case where the step distance is still larger than the short_move_distance
         # Now move the remaining distance
         step_distance = abs(target_move_distance) - accumulated_move_distance
         relative_step_distance = step_distance * direction
@@ -344,7 +346,6 @@ class ERCF(object):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
 
-
         def stop_condition(prev_condition):
             if self.toolhead_sensor.runout_helper.filament_present:
                 raise StopConditionException
@@ -352,7 +353,11 @@ class ERCF(object):
 
         # Extrude until the toolhead sensor (should be relative short)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
-        self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, stop_condition_callback=stop_condition)
+        self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance, stop_condition_callback=stop_condition)
+
+        # Extrude to the toolhead (without feedback)
+        nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
+        self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance)
 
     def ercf_load(self, gcmd):
         """
