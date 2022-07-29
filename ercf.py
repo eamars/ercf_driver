@@ -114,10 +114,13 @@ class ERCF(object):
 
         self.gcode.register_command('_ERCF_UNLOAD_TO_TOOLHEAD_SENSOR',
                                     self.ercf_unload_to_toolhead_sensor,
-                                    desc='Unload the filament back to the selector')
+                                    desc='Unload the filament back to the toolhead sensor')
         self.gcode.register_command('_ERCF_LOAD_FROM_TOOLHEAD_SENSOR',
                                     self.ercf_load_from_toolhead_sensor,
-                                    desc='Unload the filament back to the selector')
+                                    desc='Load the filament from the toolhead sensor to the nozzle')
+        self.gcode.register_command('_ERCF_UNLOAD_TO_EXTRUDER',
+                                    self.ercf_unload_to_extruder,
+                                    desc='Unload the filament back to the extruder')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
