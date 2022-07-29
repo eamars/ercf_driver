@@ -266,44 +266,47 @@ class ERCF(object):
 
         prev_state = initial_condition_callback()
 
-        while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
-            # Move
+        try:
+            while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
+                # Move
+                self.motion_counter.reset_counts()
+                toolhead_position[3] += relative_step_distance
+                self.toolhead.manual_move(toolhead_position, speed)
+
+                # Check move distance
+                filament_move_distance = self.motion_counter.get_distance()
+                accumulated_move_distance += filament_move_distance
+
+                gcmd.respond_info('Toolhead requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
+                                  .format(target_move_distance, filament_move_distance, accumulated_move_distance))
+
+                if filament_move_distance < step_distance / 2.0:
+                    msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
+                    if raise_on_filament_slip:
+                        raise self.printer.command_error(msg)
+                    else:
+                        gcmd.respond_info(msg)
+                        raise StopConditionException
+
+                # Check stop condition
+                try:
+                    prev_state = stop_condition_callback(prev_state)
+                except StopConditionException:
+                    raise StopConditionException
+
+            # TODO: Handle the case where the step distance is still larger than the short_move_distance
+            # Now move the remaining distance
+            step_distance = abs(target_move_distance) - accumulated_move_distance
+            relative_step_distance = step_distance * direction
+            speed = self.short_moves_speed
+
             self.motion_counter.reset_counts()
             toolhead_position[3] += relative_step_distance
             self.toolhead.manual_move(toolhead_position, speed)
-
-            # Check move distance
             filament_move_distance = self.motion_counter.get_distance()
             accumulated_move_distance += filament_move_distance
-
-            gcmd.respond_info('Toolhead requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
-                              .format(target_move_distance, filament_move_distance, accumulated_move_distance))
-
-            if filament_move_distance < step_distance / 2.0:
-                msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
-                if raise_on_filament_slip:
-                    raise self.printer.command_error(msg)
-                else:
-                    gcmd.respond_info(msg)
-                    break
-
-            # Check stop condition
-            try:
-                prev_state = stop_condition_callback(prev_state)
-            except StopConditionException:
-                break
-
-        # TODO: Handle the case where the step distance is still larger than the short_move_distance
-        # Now move the remaining distance
-        step_distance = abs(target_move_distance) - accumulated_move_distance
-        relative_step_distance = step_distance * direction
-        speed = self.short_moves_speed
-
-        self.motion_counter.reset_counts()
-        toolhead_position[3] += relative_step_distance
-        self.toolhead.manual_move(toolhead_position, speed)
-        filament_move_distance = self.motion_counter.get_distance()
-        accumulated_move_distance += filament_move_distance
+        except StopConditionException:
+            pass
 
         return accumulated_move_distance * direction
 
