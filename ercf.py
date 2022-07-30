@@ -118,9 +118,9 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_LOAD_FROM_TOOLHEAD_SENSOR',
                                     self.ercf_load_from_toolhead_sensor,
                                     desc='Load the filament from the toolhead sensor to the nozzle')
-        self.gcode.register_command('_ERCF_UNLOAD_TO_EXTRUDER',
-                                    self.ercf_unload_to_extruder,
-                                    desc='Unload the filament back to the extruder')
+        self.gcode.register_command('_ERCF_UNLOAD_FROM_TOOLHEAD_SENSOR_TO_EXTRUDER',
+                                    self.ercf_unload_from_toolhead_sensor_to_extruder,
+                                    desc='Unload the filament from toolhead sensor back to the extruder')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -355,10 +355,13 @@ class ERCF(object):
 
         return accumulated_move_distance
 
-    def ercf_unload_to_extruder(self, gcmd):
+    def ercf_unload_from_toolhead_sensor_to_extruder(self, gcmd):
         # Move the toolhead until the filament doesn't move anymore
         retract_distance = self.all_variables.get('calibrated_sensor_to_extruder_length') + self.extra_move_margin
-        self.toolhead_move_wait(gcmd, -retract_distance, raise_on_filament_slip=False)
+        accumulated_move_distance = self.toolhead_move_wait(gcmd, -retract_distance, raise_on_filament_slip=False)
+
+        gcmd.respond_info(
+            'The filament is loaded to the nozzle. The total move distance: {}'.format(accumulated_move_distance))
 
     def ercf_load(self, gcmd):
         """
