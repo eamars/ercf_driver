@@ -441,24 +441,25 @@ class ERCF(object):
     def ercf_unload(self, gcmd):
         # TODO: Should ignore the first retraction to avoid tension from the entire bowden path?
         # Full unload routine
+        accmulated_move_distance = 0
         gcmd.respond_info('Unloading from nozzle to toolhead sensor')
-        self.ercf_unload_to_toolhead_sensor(gcmd)
+        accmulated_move_distance += self.ercf_unload_to_toolhead_sensor(gcmd)
 
         gcmd.respond_info('Unloading from toolhead sensor to extruder')
         self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
 
         # Synchronize move the extruder and gear stepper a short distance
         gcmd.respond_info('Unloading from extruder to selector')
-        actual_move_distance = self.stepper_move_wait(gcmd,
-                                                      target_move_distance=-self.long_move_distance,
-                                                      stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
-                                                      stepper_init_callback=self._toolhead_move_init,
-                                                      step_distance=self.short_move_distance,
-                                                      step_speed=self.short_moves_speed,
-                                                      step_accel=self.short_moves_accel,
-                                                      raise_on_filament_slip=False)
+        accmulated_move_distance += self.stepper_move_wait(gcmd,
+                                                           target_move_distance=-self.long_move_distance,
+                                                           stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
+                                                           stepper_init_callback=self._toolhead_move_init,
+                                                           step_distance=self.short_move_distance,
+                                                           step_speed=self.short_moves_speed,
+                                                           step_accel=self.short_moves_accel,
+                                                           raise_on_filament_slip=False)
 
-        if not actual_move_distance == 0:
+        if not accmulated_move_distance == 0:
             # No slip move for the major calibrated distance
             major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - self.long_move_distance
             self.gear_stepper_move_wait(gcmd, -major_move_distance, major_move_distance,
