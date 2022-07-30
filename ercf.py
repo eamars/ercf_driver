@@ -510,7 +510,7 @@ class ERCF(object):
                         self.servo_up()
                     gcmd.respond_info('Filament is not engaged. Will retry')
                 else:
-                    self.printer.command_error('Filament is not engaged inside the selector. Please insert the filament manually')
+                    raise self.printer.command_error('Filament is not engaged inside the selector. Please insert the filament manually')
 
                 # Load with long step until the filament sensor has triggered
                 accumulated_step_distance = test_move_distance
