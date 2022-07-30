@@ -318,41 +318,15 @@ class ERCF(object):
         if nozzle_to_sensor_length is None:
             raise self.printer.command_error('Sensor before extruder setup is currently not supported')
 
-        accumulated_move_distance = 0
-        max_move_distance = nozzle_to_sensor_length + self.extra_move_margin
-        gcmd.respond_info('Max move distance: {}'.format(max_move_distance))
-
-        self.gcode.run_script_from_command('G92 E0')
-        toolhead_position = self.toolhead.get_position()
-        self.motion_counter.reset_counts()
-
-        while accumulated_move_distance <= nozzle_to_sensor_length + self.extra_move_margin:
-            # Check stop condition
+        def stop_on_filament_not_present(prev_condition):
             if not self.toolhead_sensor.runout_helper.filament_present:
-                gcmd.respond_info('Filament has moved pass the filament sensor. Total move distance: {}'.format(accumulated_move_distance))
-                break
+                raise StopConditionException
+            return prev_condition
 
-            # Move the toolhead
-            toolhead_position[3] -= self.short_move_distance
-
-            # We rely on the theoretical move distance as this is actuated by the extruder
-            # stage_1_move_distance += self.calibrate_move_distance_per_step
-            self.motion_counter.reset_counts()
-
-            # Retract the move distance
-            self.toolhead.manual_move(toolhead_position, self.short_moves_speed)
-            self.toolhead.wait_moves()
-
-            # Read the moved distance
-            filament_move_distance = self.motion_counter.get_distance()
-            accumulated_move_distance += filament_move_distance
-
-            gcmd.respond_info('Moved distance: {}, total move distance: {}'.format(filament_move_distance,
-                                                                                   accumulated_move_distance))
-
-            # Sanity check
-            if filament_move_distance < self.short_move_distance / 2.0:
-                raise self.printer.command_error('Filament slips before reaching the toolhead sensor')
+        nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
+        accumulated_move_distance = self.toolhead_move_wait(gcmd, nozzle_to_sensor_length + self.extra_move_margin, self.short_move_distance,
+                                                            raise_on_filament_slip=True,
+                                                            stop_condition_callback=stop_on_filament_not_present)
 
         return accumulated_move_distance
 
@@ -360,18 +334,21 @@ class ERCF(object):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
 
-        def stop_condition(prev_condition):
+        def stop_on_filament_present(prev_condition):
             if self.toolhead_sensor.runout_helper.filament_present:
                 raise StopConditionException
             return prev_condition
 
         # Extrude until the toolhead sensor (should be relative short)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
-        self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance, stop_condition_callback=stop_condition)
+        accumulated_move_distance = self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance,
+                                                            stop_condition_callback=stop_on_filament_present)
 
         # Extrude to the toolhead (without feedback)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
-        self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance)
+        accumulated_move_distance += self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance)
+
+        return accumulated_move_distance
 
     def ercf_unload_to_extruder(self, gcmd):
         # Move the toolhead until the filament doesn't move anymore
@@ -420,7 +397,7 @@ class ERCF(object):
             gcmd.respond_info('Going to run the toolhead sensorless calibration')
 
         # Form the tip to begin with
-        self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
+        # self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
 
         # Variables to dump to Vars
         nozzle_to_sensor_length = None
