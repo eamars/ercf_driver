@@ -445,6 +445,10 @@ class ERCF(object):
     def ercf_unload(self, gcmd):
         # TODO: Should ignore the first retraction to avoid tension from the entire bowden path?
         # Full unload routine
+        if self.toolhead_sensor and self.toolhead_sensor.runout_helper.filament_present:
+            # TODO: Make it a function instead of running as the macro
+            self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
+
         accmulated_move_distance = 0
         gcmd.respond_info('Unloading from nozzle to toolhead sensor')
         accmulated_move_distance += self.ercf_unload_to_toolhead_sensor(gcmd)
