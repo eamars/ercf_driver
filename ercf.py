@@ -324,7 +324,7 @@ class ERCF(object):
             return prev_condition
 
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
-        accumulated_move_distance = self.toolhead_move_wait(gcmd, nozzle_to_sensor_length + self.extra_move_margin, self.short_move_distance,
+        accumulated_move_distance = self.toolhead_move_wait(gcmd, -nozzle_to_sensor_length - self.extra_move_margin, self.short_move_distance,
                                                             raise_on_filament_slip=True,
                                                             stop_condition_callback=stop_on_filament_not_present)
 
