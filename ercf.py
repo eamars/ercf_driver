@@ -435,12 +435,16 @@ class ERCF(object):
     def ercf_unload(self, gcmd):
         # TODO: Should ignore the first retraction to avoid tension from the entire bowden path?
         # Full unload routine
+        gcmd.respond_info('Unloading from nozzle to toolhead sensor')
         self.ercf_unload_to_toolhead_sensor(gcmd)
+
+        gcmd.respond_info('Unloading from toolhead sensor to extruder')
         self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
 
-        # # Synchronize move the extruder and gear stepper a short distance
-        # self.stepper_move_wait(gcmd, self.short_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
-        #                        self._toolhead_move_init)
+        # Synchronize move the extruder and gear stepper a short distance
+        gcmd.respond_info('Unloading from extruder to selector')
+        self.stepper_move_wait(gcmd, self.long_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
+                               self._toolhead_move_init, raise_on_filament_slip=False)
 
         # No slip move for the major calibrated distance
         major_move_step_distance = self.long_move_distance
