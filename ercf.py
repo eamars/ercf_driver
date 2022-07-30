@@ -357,7 +357,7 @@ class ERCF(object):
 
     def ercf_unload_to_extruder(self, gcmd):
         # Move the toolhead until the filament doesn't move anymore
-        retract_distance = self.all_variables.get('calibrated_sensor_to_extruder_length')
+        retract_distance = self.all_variables.get('calibrated_sensor_to_extruder_length') + self.extra_move_margin
         self.toolhead_move_wait(gcmd, -retract_distance, raise_on_filament_slip=False)
 
     def ercf_load(self, gcmd):
