@@ -449,21 +449,24 @@ class ERCF(object):
 
         # Synchronize move the extruder and gear stepper a short distance
         gcmd.respond_info('Unloading from extruder to selector')
-        self.stepper_move_wait(gcmd, -self.long_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
-                               self._toolhead_move_init,
-                               step_speed=self.short_moves_speed,
-                               step_accel=self.short_moves_accel,
-                               raise_on_filament_slip=False)
+        actual_move_distance = self.stepper_move_wait(gcmd, -self.long_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
+                                                      self._toolhead_move_init,
+                                                      step_distance=self.short_move_distance,
+                                                      step_speed=self.short_moves_speed,
+                                                      step_accel=self.short_moves_accel,
+                                                      raise_on_filament_slip=False)
 
-        # No slip move for the major calibrated distance
-        major_move_step_distance = self.long_move_distance
-        major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - major_move_step_distance
-        self.gear_stepper_move_wait(gcmd, -major_move_distance, major_move_step_distance,
-                                    raise_on_filament_slip=True, lift_servo=False)
+        if not actual_move_distance == 0:
+            # No slip move for the major calibrated distance
+            major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - self.long_move_distance
+            self.gear_stepper_move_wait(gcmd, -major_move_distance, major_move_distance,
+                                        raise_on_filament_slip=True, lift_servo=False)
+        else:
+            gcmd.respond_info('Filament tip is not in the extruder. Will skip the long move')
 
         # Stop on slip
         minor_move_step_distance = self.short_move_distance
-        minor_move_distance = major_move_step_distance * 3
+        minor_move_distance = self.long_move_distance * 3
         self.gear_stepper_move_wait(gcmd, -minor_move_distance, minor_move_step_distance,
                                     raise_on_filament_slip=False, lift_servo=True)
 
