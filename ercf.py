@@ -322,9 +322,9 @@ class ERCF(object):
                 accumulated_move_distance += filament_move_distance
 
                 gcmd.respond_info('Measured move distance: {}, accumulated move distance: {}'
-                                  .format(target_move_distance, filament_move_distance, accumulated_move_distance))
+                                  .format(filament_move_distance, accumulated_move_distance))
 
-                if filament_move_distance < step_distance / 3.0:
+                if filament_move_distance == 0:
                     msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
                     if raise_on_filament_slip:
                         raise self.printer.command_error(msg)
@@ -458,13 +458,13 @@ class ERCF(object):
         # No slip move for the major calibrated distance
         major_move_step_distance = self.long_move_distance
         major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - major_move_step_distance
-        self.gear_stepper_move_wait(gcmd, major_move_distance, major_move_step_distance,
+        self.gear_stepper_move_wait(gcmd, -major_move_distance, major_move_step_distance,
                                     raise_on_filament_slip=True, lift_servo=False)
 
         # Stop on slip
         minor_move_step_distance = self.short_move_distance
         minor_move_distance = major_move_step_distance * 3
-        self.gear_stepper_move_wait(gcmd, minor_move_distance, minor_move_step_distance,
+        self.gear_stepper_move_wait(gcmd, -minor_move_distance, minor_move_step_distance,
                                     raise_on_filament_slip=False, lift_servo=True)
 
     def ercf_load(self, gcmd):
