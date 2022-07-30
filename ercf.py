@@ -264,6 +264,8 @@ class ERCF(object):
             while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
                 self.motion_counter.reset_counts()
                 self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=True)
+                self.toolhead.wait_moves()  # WHY TOOLHEAD??
+
                 filament_move_distance = self.motion_counter.get_distance()
                 accumulated_move_distance += filament_move_distance
 
@@ -275,6 +277,20 @@ class ERCF(object):
                         gcmd.respond_info(msg)
                         raise StopConditionException
 
+            # TODO: Handle the case where the step distance is still larger than the short_move_distance
+            # Now move the remaining distance
+            step_distance = abs(target_move_distance) - accumulated_move_distance
+            relative_step_distance = step_distance * direction
+            speed = self.short_moves_speed
+
+            self.motion_counter.reset_counts()
+            self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=True)
+            self.toolhead.wait_moves()  # WHY TOOLHEAD??
+            filament_move_distance = self.motion_counter.get_distance()
+            accumulated_move_distance += filament_move_distance
+
+        except StopConditionException:
+            pass
         finally:
             if lift_servo:
                 self.servo_up()
@@ -349,6 +365,7 @@ class ERCF(object):
             self.motion_counter.reset_counts()
             toolhead_position[3] += relative_step_distance
             self.toolhead.manual_move(toolhead_position, speed)
+            self.toolhead.wait_moves()
             filament_move_distance = self.motion_counter.get_distance()
             accumulated_move_distance += filament_move_distance
         except StopConditionException:
