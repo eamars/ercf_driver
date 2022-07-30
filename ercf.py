@@ -272,7 +272,7 @@ class ERCF(object):
                 self.motion_counter.reset_counts()
                 toolhead_position[3] += relative_step_distance
                 self.toolhead.manual_move(toolhead_position, speed)
-
+                self.toolhead.wait_moves()
                 # Check move distance
                 filament_move_distance = self.motion_counter.get_distance()
                 accumulated_move_distance += filament_move_distance
