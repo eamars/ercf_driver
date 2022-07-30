@@ -200,8 +200,10 @@ class ERCF(object):
             servo_name = self.servo_name.split()[1]
             self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                     self.servo_up_angle))
+            self.toolhead.wait_moves()
             time.sleep(0.25 + self.extra_servo_dwell_up)
             self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
+            self.toolhead.wait_moves()
 
     def servo_down(self):
         if self._servo_status != 'down':
@@ -214,6 +216,7 @@ class ERCF(object):
 
             self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                     self.servo_down_angle))
+            self.toolhead.wait_moves()
             time.sleep(0.2)
 
             self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
@@ -221,6 +224,7 @@ class ERCF(object):
             self.gear_stepper.do_move(-0.5, speed=25, accel=self.gear_stepper_accel)
             time.sleep(0.1 + self.extra_servo_dwell_down)
             self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
+            self.toolhead.wait_moves()
             self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
             self.toolhead.wait_moves()
@@ -240,8 +244,42 @@ class ERCF(object):
             self.toolhead.wait_moves()
 
     def gear_stepper_move_wait(self, gcmd, target_move_distance, step_distance=None, raise_on_filament_slip=True, lift_servo=True):
+        self.servo_down()
+        try:
+            accumulated_move_distance = self.stepper_move_wait(gcmd,
+                                                               target_move_distance=target_move_distance,
+                                                               step_distance=step_distance,
+                                                               stepper_block_move_callback=self._gear_stepper_block_move,
+                                                               raise_on_filament_slip=raise_on_filament_slip)
+        finally:
+            if lift_servo:
+                self.servo_up()
+
+        return accumulated_move_distance
+
+    def toolhead_move_wait(self, gcmd, target_move_distance, step_distance=None, raise_on_filament_slip=True,
+                           initial_condition_callback=None, stop_condition_callback=None):
+        accumulated_move_distance = self.stepper_move_wait(gcmd,
+                                                           target_move_distance=target_move_distance,
+                                                           step_distance=step_distance,
+                                                           stepper_block_move_callback=self._toolhead_block_move,
+                                                           stepper_init_callback=self._toolhead_move_init,
+                                                           initial_condition_callback=initial_condition_callback,
+                                                           stop_condition_callback=stop_condition_callback,
+                                                           raise_on_filament_slip=raise_on_filament_slip)
+        return accumulated_move_distance
+
+    def stepper_move_wait(self, gcmd, target_move_distance,
+                          stepper_block_move_callback, stepper_init_callback=None,
+                          step_distance=None, raise_on_filament_slip=True,
+                          initial_condition_callback=None, stop_condition_callback=None):
+        if stop_condition_callback is None:
+            stop_condition_callback = lambda x=None: x
+        if initial_condition_callback is None:
+            initial_condition_callback = lambda x=None: x
+
         if step_distance is None:
-            step_distance = self.long_move_distance
+            step_distance = min(self.long_move_distance, target_move_distance)
 
         if target_move_distance >= 0:
             direction = 1
@@ -255,75 +293,12 @@ class ERCF(object):
             speed = self.short_moves_speed
             accel = self.short_moves_accel
 
-        relative_step_distance = step_distance * direction
-
-        self.servo_down()
-
-        self.motion_counter.reset_counts()
-        accumulated_move_distance = 0
-        gcmd.respond_info('Requested gear stepper move distance: {}'.format(target_move_distance))
-
-        try:
-            while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
-                self.motion_counter.reset_counts()
-                self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=True)
-                self.toolhead.wait_moves()  # WHY TOOLHEAD??
-
-                filament_move_distance = self.motion_counter.get_distance()
-                accumulated_move_distance += filament_move_distance
-
-                if filament_move_distance < step_distance / 3.0:
-                    msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
-                    if raise_on_filament_slip:
-                        raise self.printer.command_error(msg)
-                    else:
-                        gcmd.respond_info(msg)
-                        raise StopConditionException
-
-            # TODO: Handle the case where the step distance is still larger than the short_move_distance
-            # Now move the remaining distance
-            step_distance = abs(target_move_distance) - accumulated_move_distance
-            relative_step_distance = step_distance * direction
-            speed = self.short_moves_speed
-
-            self.motion_counter.reset_counts()
-            self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=True)
-            self.toolhead.wait_moves()  # WHY TOOLHEAD??
-            filament_move_distance = self.motion_counter.get_distance()
-            accumulated_move_distance += filament_move_distance
-
-        except StopConditionException:
-            pass
-        finally:
-            if lift_servo:
-                self.servo_up()
-
-        return accumulated_move_distance * direction
-
-    def toolhead_move_wait(self, gcmd, target_move_distance, step_distance=None, raise_on_filament_slip=True,
-                           initial_condition_callback=None, stop_condition_callback=None):
-        if stop_condition_callback is None:
-            stop_condition_callback = lambda x=None: x
-        if initial_condition_callback is None:
-            initial_condition_callback = lambda x=None: x
-
-        if step_distance is None:
-            step_distance = self.long_move_distance
-
-        if target_move_distance >= 0:
-            direction = 1
-        else:
-            direction = -1
-
-        if step_distance >= self.long_move_distance:
-            speed = self.long_moves_speed
-        else:
-            speed = self.short_moves_speed
+        if stepper_init_callback is None:
+            stepper_init_callback = lambda x=None:x
 
         relative_step_distance = step_distance * direction
 
-        self.gcode.run_script_from_command('G92 E0')
-        toolhead_position = self.toolhead.get_position()
+        stepper_status = stepper_init_callback()
         self.motion_counter.reset_counts()
 
         accumulated_move_distance = 0
@@ -335,14 +310,12 @@ class ERCF(object):
             while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
                 # Move
                 self.motion_counter.reset_counts()
-                toolhead_position[3] += relative_step_distance
-                self.toolhead.manual_move(toolhead_position, speed)
-                self.toolhead.wait_moves()
+                stepper_status = stepper_block_move_callback(stepper_status, relative_step_distance, speed, accel)
                 # Check move distance
                 filament_move_distance = self.motion_counter.get_distance()
                 accumulated_move_distance += filament_move_distance
 
-                gcmd.respond_info('Toolhead requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
+                gcmd.respond_info('Stepper requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
                                   .format(target_move_distance, filament_move_distance, accumulated_move_distance))
 
                 if filament_move_distance < step_distance / 3.0:
@@ -364,17 +337,48 @@ class ERCF(object):
             step_distance = abs(target_move_distance) - accumulated_move_distance
             relative_step_distance = step_distance * direction
             speed = self.short_moves_speed
+            accel = self.short_moves_accel
 
             self.motion_counter.reset_counts()
-            toolhead_position[3] += relative_step_distance
-            self.toolhead.manual_move(toolhead_position, speed)
+            stepper_status = stepper_block_move_callback(stepper_status, relative_step_distance, speed, accel)
             self.toolhead.wait_moves()
+
             filament_move_distance = self.motion_counter.get_distance()
             accumulated_move_distance += filament_move_distance
         except StopConditionException:
             pass
 
         return accumulated_move_distance * direction
+
+    def _toolhead_block_move(self, toolhead_position, relative_step_distance, speed, accel):
+        toolhead_position[3] += relative_step_distance
+        self.toolhead.manual_move(toolhead_position, speed)
+        self.toolhead.wait_moves()
+
+        return toolhead_position
+
+    def _toolhead_move_init(self):
+        self.gcode.run_script_from_command('G92 E0')
+        toolhead_position = self.toolhead.get_position()
+
+        return toolhead_position
+
+    def _gear_stepper_block_move(self, stepper_status, relative_step_distance, speed, accel):
+        self.gear_stepper.do_set_position(0)
+        self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=True)
+        self.toolhead.wait_moves()  # WHY TOOLHEAD??
+
+        return None
+
+    def _toolhead_gear_stepper_synchronized_block_move(self, toolhead_position, relative_step_distance, speed, accel):
+        # Setup the gear stepper first
+        self.gear_stepper.do_set_position(0)
+        self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=False)
+
+        toolhead_position[3] += relative_step_distance
+        self.toolhead.manual_move(toolhead_position, speed)
+
+        self.toolhead.wait_moves()
 
     def ercf_unload_to_toolhead_sensor(self, gcmd):
         if not self.toolhead_sensor:
@@ -436,6 +440,10 @@ class ERCF(object):
         # Full unload routine
         self.ercf_unload_to_toolhead_sensor(gcmd)
         self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
+
+        # Synchronize move the extruder and gear stepper a short distance
+        self.stepper_move_wait(gcmd, self.short_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
+                               self._toolhead_move_init)
 
         # No slip move for the major calibrated distance
         major_move_step_distance = self.long_move_distance
