@@ -483,6 +483,8 @@ class ERCF(object):
             # TODO: Pull back a little
             self.servo_up()
 
+        return accumulated_move_distance
+
     def ercf_unload(self, gcmd):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
