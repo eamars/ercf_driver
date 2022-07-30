@@ -448,19 +448,19 @@ class ERCF(object):
         with self._gear_stepper_move_guard():
             self.servo_down()
             # Move a little by both toolhead and gear stepper to help pulling from the extruder
-            target_move_distance = self.long_move_distance
+            target_move_distance = self.short_move_distance
             actual_move_distance = self.stepper_move_wait(gcmd,
                                                           target_move_distance=-target_move_distance,
                                                           stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                           stepper_init_callback=self._toolhead_move_init,
-                                                          step_distance=self.long_move_distance,
-                                                          step_speed=self.long_moves_speed,
-                                                          step_accel=self.long_moves_accel,
+                                                          step_distance=self.short_move_distance,
+                                                          step_speed=self.short_moves_speed,
+                                                          step_accel=self.short_moves_accel,
                                                           raise_on_filament_slip=True)
             accumulated_move_distance += actual_move_distance
 
             # Pull purely by the gear stepper
-            target_move_distance = min(0, self.all_variables['calibrated_extruder_to_selector_length'] - abs(actual_move_distance) - self.long_move_distance)
+            target_move_distance = max(0, self.all_variables['calibrated_extruder_to_selector_length'] - abs(actual_move_distance) - self.long_move_distance)
             actual_move_distance = self.gear_stepper_move_wait(gcmd,
                                                                target_move_distance=-target_move_distance,
                                                                step_distance=target_move_distance,
@@ -469,8 +469,8 @@ class ERCF(object):
                                                                raise_on_filament_slip=True, lift_servo=False)
             accumulated_move_distance += actual_move_distance
 
-            # Retract back to the selector
-            target_move_distance = min(0, self.all_variables['calibrated_extruder_to_selector_length'] - abs(actual_move_distance)) + self.long_move_distance
+            # Retract back to the selector with short moves
+            target_move_distance = max(0, self.all_variables['calibrated_extruder_to_selector_length'] - abs(actual_move_distance)) + self.long_move_distance
             actual_move_distance = self.gear_stepper_move_wait(gcmd,
                                                                target_move_distance=-target_move_distance,
                                                                step_distance=self.short_move_distance,
@@ -479,7 +479,16 @@ class ERCF(object):
                                                                raise_on_filament_slip=False, lift_servo=False)
             accumulated_move_distance += actual_move_distance
 
-            # TODO: Pull back a little
+            # Pull back a little
+            target_move_distance = 10
+            actual_move_distance = self.gear_stepper_move_wait(gcmd,
+                                                               target_move_distance=-target_move_distance,
+                                                               step_distance=self.short_move_distance,
+                                                               step_speed=self.short_moves_speed,
+                                                               step_accel=self.short_moves_accel,
+                                                               raise_on_filament_slip=False, lift_servo=False)
+            accumulated_move_distance += actual_move_distance
+
             self.servo_up()
 
         return accumulated_move_distance
@@ -511,7 +520,7 @@ class ERCF(object):
             accumulated_move_distance += actual_move_distance
 
             # Move a little to disengage with the extruder
-            target_move_distance = min(0, self.all_variables['calibrated_sensor_to_extruder_length'] - abs(actual_move_distance)) + self.long_move_distance
+            target_move_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - abs(actual_move_distance)) + self.long_move_distance
             actual_move_distance = self.toolhead_move_wait(gcmd,
                                                            target_move_distance=-target_move_distance,
                                                            step_distance=self.short_move_distance,
@@ -556,6 +565,15 @@ class ERCF(object):
                                                                        raise_on_filament_slip=False, lift_servo=False)
                     accumulated_move_distance += actual_move_distance
 
+                    # Pull back a little
+                    target_move_distance = 10
+                    actual_move_distance = self.gear_stepper_move_wait(gcmd,
+                                                                       target_move_distance=-target_move_distance,
+                                                                       step_distance=self.short_move_distance,
+                                                                       step_speed=self.short_moves_speed,
+                                                                       step_accel=self.short_moves_accel,
+                                                                       raise_on_filament_slip=False, lift_servo=False)
+                    accumulated_move_distance += actual_move_distance
                     self.servo_up()
 
         gcmd.respond_info('Filament is unloaded to the selector')
@@ -648,7 +666,7 @@ class ERCF(object):
             accumulated_step_distance += actual_distance
 
             # Approach the extruder (but don't collide)
-            target_distance = min(0, self.all_variables['calibrated_extruder_to_selector_length'] - actual_distance - self.short_move_distance)
+            target_distance = max(0, self.all_variables['calibrated_extruder_to_selector_length'] - actual_distance - self.short_move_distance)
             if target_distance:
                 accumulated_step_distance += self.gear_stepper_move_wait(gcmd,
                                                                          target_move_distance=target_distance,
@@ -673,7 +691,7 @@ class ERCF(object):
             self.servo_up()
 
         # Since we are closed to the toolhead sensor, we want do move slowly
-        target_distance = min(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) + self.long_move_distance
+        target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) + self.long_move_distance
         accumulated_step_distance += self.toolhead_move_wait(gcmd,
                                                              target_move_distance=target_distance,
                                                              step_distance=self.short_move_distance,
