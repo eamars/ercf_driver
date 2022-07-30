@@ -370,7 +370,7 @@ class ERCF(object):
     def _toolhead_gear_stepper_synchronized_block_move(self, toolhead_position, relative_step_distance, speed, accel):
         # Setup the gear stepper first
         self.gear_stepper.do_set_position(0)
-        self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=False)
+        self.gear_stepper.do_move(relative_step_distance, speed, 0, sync=False)  # Do not use acceleration control in synchronous move
 
         toolhead_position[3] += relative_step_distance
         self.toolhead.manual_move(toolhead_position, speed)
