@@ -328,6 +328,9 @@ class ERCF(object):
                                                             raise_on_filament_slip=True,
                                                             stop_condition_callback=stop_on_filament_not_present)
 
+        gcmd.respond_info('The filament tip is now parked right before the filament sensor. The total move distance: {}'
+                          .format(accumulated_move_distance))
+
         return accumulated_move_distance
 
     def ercf_load_from_toolhead_sensor(self, gcmd):
@@ -347,6 +350,8 @@ class ERCF(object):
         # Extrude to the toolhead (without feedback)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
         accumulated_move_distance += self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance)
+
+        gcmd.respond_info('The filament is loaded to the nozzle. The total move distance: {}'.format(accumulated_move_distance))
 
         return accumulated_move_distance
 
