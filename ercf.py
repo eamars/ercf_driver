@@ -324,7 +324,7 @@ class ERCF(object):
                 gcmd.respond_info('Measured move distance: {}, accumulated move distance: {}'
                                   .format(filament_move_distance, accumulated_move_distance))
 
-                if filament_move_distance == 0:
+                if filament_move_distance < step_distance / 3.0:
                     msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
                     if raise_on_filament_slip:
                         raise self.printer.command_error(msg)
@@ -449,7 +449,7 @@ class ERCF(object):
 
         # Synchronize move the extruder and gear stepper a short distance
         gcmd.respond_info('Unloading from extruder to selector')
-        self.stepper_move_wait(gcmd, self.long_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
+        self.stepper_move_wait(gcmd, -self.long_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
                                self._toolhead_move_init,
                                step_speed=self.short_moves_speed,
                                step_accel=self.short_moves_accel,
