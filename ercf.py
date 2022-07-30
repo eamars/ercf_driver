@@ -383,6 +383,8 @@ class ERCF(object):
 
         self.toolhead.wait_moves()
 
+        return toolhead_position
+
     def ercf_unload_to_toolhead_sensor(self, gcmd):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
