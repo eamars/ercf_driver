@@ -449,8 +449,10 @@ class ERCF(object):
 
         # Synchronize move the extruder and gear stepper a short distance
         gcmd.respond_info('Unloading from extruder to selector')
-        actual_move_distance = self.stepper_move_wait(gcmd, -self.long_move_distance, self._toolhead_gear_stepper_synchronized_block_move,
-                                                      self._toolhead_move_init,
+        actual_move_distance = self.stepper_move_wait(gcmd,
+                                                      target_move_distance=-self.long_move_distance,
+                                                      stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
+                                                      stepper_init_callback=self._toolhead_move_init,
                                                       step_distance=self.short_move_distance,
                                                       step_speed=self.short_moves_speed,
                                                       step_accel=self.short_moves_accel,
