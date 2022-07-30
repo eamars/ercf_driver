@@ -435,54 +435,128 @@ class ERCF(object):
     def ercf_unload_from_toolhead_sensor_to_extruder(self, gcmd):
         # First stage is to unload the filament to a proximate position with long move distance and speed
         retract_distance = self.all_variables.get('calibrated_sensor_to_extruder_length') - self.long_move_distance
-        accumulated_move_distance = self.toolhead_move_wait(gcmd, -retract_distance, raise_on_filament_slip=False)
+        accumulated_move_distance = self.toolhead_move_wait(gcmd, -retract_distance, raise_on_filament_slip=False,)
 
         gcmd.respond_info(
             'The filament unloaded just passed the extruder. The total move distance: {}'.format(accumulated_move_distance))
 
         return accumulated_move_distance
 
+    def ercf_unload_from_extruder_to_selector(self, gcmd):
+        accumulated_move_distance = 0
+        gcmd.respond_info('Unloading from extruder to the selector')
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+            # Move a little by both toolhead and gear stepper to help pulling from the extruder
+            target_move_distance = self.long_move_distance
+            actual_move_distance = self.stepper_move_wait(gcmd,
+                                                          target_move_distance=target_move_distance,
+                                                          stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
+                                                          stepper_init_callback=self._toolhead_move_init,
+                                                          step_distance=self.long_move_distance,
+                                                          step_speed=self.long_moves_speed,
+                                                          step_accel=self.long_moves_accel,
+                                                          raise_on_filament_slip=True)
+            accumulated_move_distance += actual_move_distance
+
+            # Pull purely by the gear stepper
+            target_move_distance = min(0, self.all_variables[
+                'calibrated_extruder_to_selector_length'] - actual_move_distance - self.long_move_distance)
+            actual_move_distance = self.gear_stepper_move_wait(gcmd,
+                                                               target_move_distance=target_move_distance,
+                                                               step_distance=target_move_distance,
+                                                               step_speed=self.long_moves_speed,
+                                                               step_accel=self.long_moves_accel,
+                                                               raise_on_filament_slip=True, lift_servo=False)
+            accumulated_move_distance += actual_move_distance
+
+            # Retract back to the selector
+            target_move_distance = min(0, self.all_variables[
+                'calibrated_extruder_to_selector_length'] - actual_move_distance, self.long_move_distance)
+            actual_move_distance = self.gear_stepper_move_wait(gcmd,
+                                                               target_move_distance=target_move_distance,
+                                                               step_distance=self.short_move_distance,
+                                                               step_speed=self.short_moves_speed,
+                                                               step_accel=self.short_moves_accel,
+                                                               raise_on_filament_slip=False, lift_servo=False)
+            accumulated_move_distance += actual_move_distance
+
+            # TODO: Pull back a little
+            self.servo_up()
+
     def ercf_unload(self, gcmd):
-        # TODO: Should ignore the first retraction to avoid tension from the entire bowden path?
-        # Full unload routine
-        if self.toolhead_sensor and self.toolhead_sensor.runout_helper.filament_present:
+        if not self.toolhead_sensor:
+            raise self.printer.command_error('Filament sensor is not defined')
+
+        nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
+        if nozzle_to_sensor_length is None:
+            raise self.printer.command_error('Sensor before extruder setup is currently not supported')
+
+        accumulated_move_distance = 0
+        if self.toolhead_sensor.runout_helper.filament_present:
             # TODO: Make it a function instead of running as the macro
             self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
 
-        accmulated_move_distance = 0
-        gcmd.respond_info('Unloading from nozzle to toolhead sensor')
-        accmulated_move_distance += self.ercf_unload_to_toolhead_sensor(gcmd)
+            gcmd.respond_info('Unloading from nozzle to toolhead sensor')
+            self.ercf_unload_to_toolhead_sensor(gcmd)
 
-        gcmd.respond_info('Unloading from toolhead sensor to extruder')
-        accmulated_move_distance += self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
+            # This is the clean retraction
+            gcmd.respond_info('Unloading from toolhead sensor to extruder')
+            target_move_distance = self.all_variables['calibrated_sensor_to_extruder_length']
+            actual_move_distance = self.toolhead_move_wait(gcmd,
+                                                           target_move_distance=target_move_distance,
+                                                           step_distance=target_move_distance,
+                                                           step_speed=self.long_moves_speed,
+                                                           raise_on_filament_slip=False)
+            accumulated_move_distance += actual_move_distance
 
-        # Synchronize move the extruder and gear stepper a short distance
-        gcmd.respond_info('Unloading from extruder to selector')
-        accmulated_move_distance += self.stepper_move_wait(gcmd,
-                                                           target_move_distance=-self.long_move_distance,
-                                                           stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
-                                                           stepper_init_callback=self._toolhead_move_init,
+            # Move a little to disengage with the extruder
+            target_move_distance = min(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_move_distance) + self.long_move_distance
+            actual_move_distance = self.toolhead_move_wait(gcmd,
+                                                           target_move_distance=target_move_distance,
                                                            step_distance=self.short_move_distance,
                                                            step_speed=self.short_moves_speed,
-                                                           step_accel=self.short_moves_accel,
                                                            raise_on_filament_slip=False)
+            accumulated_move_distance += actual_move_distance
 
-        if not accmulated_move_distance == 0:
-            # No slip move for the major calibrated distance
-            major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - self.long_move_distance
-            self.gear_stepper_move_wait(gcmd, -major_move_distance, major_move_distance,
-                                        raise_on_filament_slip=True, lift_servo=False)
-            minor_move_distance = self.long_move_distance * 3
-            # Stop on slip
-            self.gear_stepper_move_wait(gcmd, -minor_move_distance, self.short_move_distance,
-                                        raise_on_filament_slip=False, lift_servo=True)
+            accumulated_move_distance += self.ercf_unload_from_extruder_to_selector(gcmd)
         else:
-            gcmd.respond_info('Filament tip is not in the extruder. Will skip the long move')
-            major_move_distance = self.all_variables['calibrated_extruder_to_selector_length']
+            gcmd.respond_info('Unloading unknown location')
 
-            # Stop on slip
-            self.gear_stepper_move_wait(gcmd, -major_move_distance, self.short_move_distance,
-                                        raise_on_filament_slip=False, lift_servo=True)
+            # Do a short move to verify the filament is still engaged with the filament
+            actual_move_distance = self.toolhead_move_wait(gcmd,
+                                                           target_move_distance=self.short_move_distance,
+                                                           step_distance=self.short_move_distance,
+                                                           step_speed=self.short_move_distance,
+                                                           raise_on_filament_slip=False)
+            accumulated_move_distance += actual_move_distance
+            if actual_move_distance != 0:
+                # Do the short move until not moving anymore
+                target_move_distance = self.all_variables['calibrated_sensor_to_extruder_length'] + self.long_move_distance
+                actual_move_distance = self.toolhead_move_wait(gcmd,
+                                                               target_move_distance=target_move_distance,
+                                                               step_distance=self.short_move_distance,
+                                                               step_speed=self.short_move_distance,
+                                                               raise_on_filament_slip=False)
+                accumulated_move_distance += actual_move_distance
+
+                accumulated_move_distance += self.ercf_unload_from_extruder_to_selector(gcmd)
+            else:
+                # it might be some between the extruder and selector
+                with self._gear_stepper_move_guard():
+                    self.servo_down()
+
+                    # Move slowly until the selector
+                    target_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] + self.long_move_distance
+                    actual_move_distance = self.gear_stepper_move_wait(gcmd,
+                                                                       target_move_distance=target_move_distance,
+                                                                       step_distance=self.short_move_distance,
+                                                                       step_speed=self.short_moves_speed,
+                                                                       step_accel=self.short_moves_accel,
+                                                                       raise_on_filament_slip=False, lift_servo=False)
+                    accumulated_move_distance += actual_move_distance
+
+                    self.servo_up()
 
         gcmd.respond_info('Filament is unloaded to the selector')
 
