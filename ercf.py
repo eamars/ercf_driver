@@ -461,14 +461,17 @@ class ERCF(object):
             major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - self.long_move_distance
             self.gear_stepper_move_wait(gcmd, -major_move_distance, major_move_distance,
                                         raise_on_filament_slip=True, lift_servo=False)
+            minor_move_distance = self.long_move_distance * 3
+            # Stop on slip
+            self.gear_stepper_move_wait(gcmd, -minor_move_distance, self.short_move_distance,
+                                        raise_on_filament_slip=False, lift_servo=True)
         else:
             gcmd.respond_info('Filament tip is not in the extruder. Will skip the long move')
+            major_move_distance = self.all_variables['calibrated_extruder_to_selector_length']
 
-        # Stop on slip
-        minor_move_step_distance = self.short_move_distance
-        minor_move_distance = self.long_move_distance * 3
-        self.gear_stepper_move_wait(gcmd, -minor_move_distance, minor_move_step_distance,
-                                    raise_on_filament_slip=False, lift_servo=True)
+            # Stop on slip
+            self.gear_stepper_move_wait(gcmd, -major_move_distance, self.short_move_distance,
+                                        raise_on_filament_slip=False, lift_servo=True)
 
     def ercf_load(self, gcmd):
         """
