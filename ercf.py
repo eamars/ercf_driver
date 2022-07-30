@@ -304,7 +304,10 @@ class ERCF(object):
         accumulated_move_distance = 0
         gcmd.respond_info('Requested toolhead move distance: {}'.format(target_move_distance))
 
-        prev_state = initial_condition_callback()
+        try:
+            prev_state = initial_condition_callback()
+        except StopConditionException:
+            return 0
 
         try:
             while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
@@ -327,10 +330,7 @@ class ERCF(object):
                         raise StopConditionException
 
                 # Check stop condition
-                try:
-                    prev_state = stop_condition_callback(prev_state)
-                except StopConditionException:
-                    raise StopConditionException
+                prev_state = stop_condition_callback(prev_state)
 
             # TODO: Handle the case where the step distance is still larger than the short_move_distance
             # Now move the remaining distance
