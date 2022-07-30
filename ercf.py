@@ -438,6 +438,8 @@ class ERCF(object):
         gcmd.respond_info(
             'The filament unloaded just passed the extruder. The total move distance: {}'.format(accumulated_move_distance))
 
+        return accumulated_move_distance
+
     def ercf_unload(self, gcmd):
         # TODO: Should ignore the first retraction to avoid tension from the entire bowden path?
         # Full unload routine
@@ -446,7 +448,7 @@ class ERCF(object):
         accmulated_move_distance += self.ercf_unload_to_toolhead_sensor(gcmd)
 
         gcmd.respond_info('Unloading from toolhead sensor to extruder')
-        self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
+        accmulated_move_distance += self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
 
         # Synchronize move the extruder and gear stepper a short distance
         gcmd.respond_info('Unloading from extruder to selector')
