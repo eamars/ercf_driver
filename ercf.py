@@ -311,8 +311,8 @@ class ERCF(object):
                 filament_move_distance = self.motion_counter.get_distance()
                 accumulated_move_distance += filament_move_distance
 
-                gcmd.respond_info('Measured move distance: {}, accumulated move distance: {}'
-                                  .format(filament_move_distance, accumulated_move_distance))
+                gcmd.respond_info('Requested step distance: {}, measured move distance: {}, accumulated move distance: {}'
+                                  .format(relative_step_distance, filament_move_distance, accumulated_move_distance))
 
                 if filament_move_distance < step_distance / 3.0:
                     msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
@@ -480,21 +480,6 @@ class ERCF(object):
         gcmd.respond_info('Filament is unloaded to the selector')
 
     def ercf_load_from_unknown_location(self, gcmd):
-        """
-        Determine current position:
-         * If toolhead sensor is triggered, the filament tip is
-            * Between the nozzle and extruder (if calibrated_extruder_to_sensor_length is positive)
-            * Between the extruder and the selector (if calibrated_extruder_to_sensor_length is negative)
-            -> Retract until the toolhead sensor is empty, then extrude from current position
-         * If toolhead sensor is not triggered or not present, apply few mm of extrusion from the extruder
-            * If moved, then the filament tip is between the nozzle to the extruder
-                -> Use short move to extrude until the filament sensor triggered
-            * If not moved, then the filament tip is between the extruder to the selector
-                -> Retract until the filament doesn't move anymore, then continue next step
-         * Extrude few mm of filament from gear stepper
-            * If moved, then retract until not moving anymore.
-            * If not moved, then extrude from the gear stepper
-        """
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
 
@@ -509,7 +494,7 @@ class ERCF(object):
             try:
                 # Check if the filament is engaged inside the selector
                 gcmd.respond_info('Check filament engagement inside selector')
-                for _ in range(self.selector_filament_engagement_retry):
+                for i in range(self.selector_filament_engagement_retry):
                     self.servo_down()
                     test_move_distance = self.stepper_move_wait(gcmd,
                                                                 target_move_distance=self.short_move_distance,
