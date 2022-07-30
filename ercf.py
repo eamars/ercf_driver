@@ -223,6 +223,8 @@ class ERCF(object):
             self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
             self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
+            self.toolhead.wait_moves()
+
     def _gear_stepper_move_wait_legacy(self, dist, wait=True, speed=None, accel=None):
         # LEGACY METHOD. Pending removal
         self.gear_stepper.do_set_position(0.)
@@ -255,11 +257,12 @@ class ERCF(object):
 
         relative_step_distance = step_distance * direction
 
+        self.servo_down()
+
         self.motion_counter.reset_counts()
         accumulated_move_distance = 0
         gcmd.respond_info('Requested gear stepper move distance: {}'.format(target_move_distance))
 
-        self.servo_down()
         try:
             while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
                 self.motion_counter.reset_counts()
