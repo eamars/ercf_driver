@@ -450,7 +450,7 @@ class ERCF(object):
             # Move a little by both toolhead and gear stepper to help pulling from the extruder
             target_move_distance = self.long_move_distance
             actual_move_distance = self.stepper_move_wait(gcmd,
-                                                          target_move_distance=target_move_distance,
+                                                          target_move_distance=-target_move_distance,
                                                           stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                           stepper_init_callback=self._toolhead_move_init,
                                                           step_distance=self.long_move_distance,
@@ -463,7 +463,7 @@ class ERCF(object):
             target_move_distance = min(0, self.all_variables[
                 'calibrated_extruder_to_selector_length'] - actual_move_distance - self.long_move_distance)
             actual_move_distance = self.gear_stepper_move_wait(gcmd,
-                                                               target_move_distance=target_move_distance,
+                                                               target_move_distance=-target_move_distance,
                                                                step_distance=target_move_distance,
                                                                step_speed=self.long_moves_speed,
                                                                step_accel=self.long_moves_accel,
@@ -471,10 +471,9 @@ class ERCF(object):
             accumulated_move_distance += actual_move_distance
 
             # Retract back to the selector
-            target_move_distance = min(0, self.all_variables[
-                'calibrated_extruder_to_selector_length'] - actual_move_distance, self.long_move_distance)
+            target_move_distance = min(0, self.all_variables['calibrated_extruder_to_selector_length'] - abs(actual_move_distance)) + self.long_move_distance
             actual_move_distance = self.gear_stepper_move_wait(gcmd,
-                                                               target_move_distance=target_move_distance,
+                                                               target_move_distance=-target_move_distance,
                                                                step_distance=self.short_move_distance,
                                                                step_speed=self.short_moves_speed,
                                                                step_accel=self.short_moves_accel,
@@ -504,16 +503,16 @@ class ERCF(object):
             gcmd.respond_info('Unloading from toolhead sensor to extruder')
             target_move_distance = self.all_variables['calibrated_sensor_to_extruder_length']
             actual_move_distance = self.toolhead_move_wait(gcmd,
-                                                           target_move_distance=target_move_distance,
+                                                           target_move_distance=-target_move_distance,
                                                            step_distance=target_move_distance,
                                                            step_speed=self.long_moves_speed,
                                                            raise_on_filament_slip=False)
             accumulated_move_distance += actual_move_distance
 
             # Move a little to disengage with the extruder
-            target_move_distance = min(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_move_distance) + self.long_move_distance
+            target_move_distance = min(0, self.all_variables['calibrated_sensor_to_extruder_length'] - abs(actual_move_distance)) + self.long_move_distance
             actual_move_distance = self.toolhead_move_wait(gcmd,
-                                                           target_move_distance=target_move_distance,
+                                                           target_move_distance=-target_move_distance,
                                                            step_distance=self.short_move_distance,
                                                            step_speed=self.short_moves_speed,
                                                            raise_on_filament_slip=False)
@@ -525,7 +524,7 @@ class ERCF(object):
 
             # Do a short move to verify the filament is still engaged with the filament
             actual_move_distance = self.toolhead_move_wait(gcmd,
-                                                           target_move_distance=self.short_move_distance,
+                                                           target_move_distance=-self.short_move_distance,
                                                            step_distance=self.short_move_distance,
                                                            step_speed=self.short_move_distance,
                                                            raise_on_filament_slip=False)
@@ -534,7 +533,7 @@ class ERCF(object):
                 # Do the short move until not moving anymore
                 target_move_distance = self.all_variables['calibrated_sensor_to_extruder_length'] + self.long_move_distance
                 actual_move_distance = self.toolhead_move_wait(gcmd,
-                                                               target_move_distance=target_move_distance,
+                                                               target_move_distance=-target_move_distance,
                                                                step_distance=self.short_move_distance,
                                                                step_speed=self.short_move_distance,
                                                                raise_on_filament_slip=False)
@@ -549,7 +548,7 @@ class ERCF(object):
                     # Move slowly until the selector
                     target_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] + self.long_move_distance
                     actual_move_distance = self.gear_stepper_move_wait(gcmd,
-                                                                       target_move_distance=target_move_distance,
+                                                                       target_move_distance=-target_move_distance,
                                                                        step_distance=self.short_move_distance,
                                                                        step_speed=self.short_moves_speed,
                                                                        step_accel=self.short_moves_accel,
