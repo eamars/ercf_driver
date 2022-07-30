@@ -267,7 +267,7 @@ class ERCF(object):
                 filament_move_distance = self.motion_counter.get_distance()
                 accumulated_move_distance += filament_move_distance
 
-                if filament_move_distance < step_distance / 2.0:
+                if filament_move_distance < step_distance / 3.0:
                     msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
                     if raise_on_filament_slip:
                         raise self.printer.command_error(msg)
@@ -326,7 +326,7 @@ class ERCF(object):
                 gcmd.respond_info('Toolhead requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
                                   .format(target_move_distance, filament_move_distance, accumulated_move_distance))
 
-                if filament_move_distance < step_distance / 2.0:
+                if filament_move_distance < step_distance / 3.0:
                     msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
                     if raise_on_filament_slip:
                         raise self.printer.command_error(msg)
@@ -412,13 +412,14 @@ class ERCF(object):
             'The filament unloaded just passed the extruder. The total move distance: {}'.format(accumulated_move_distance))
 
     def ercf_unload(self, gcmd):
+        # TODO: Should ignore the first retraction to avoid tension from the entire bowden path?
         # Full unload routine
         self.ercf_unload_to_toolhead_sensor(gcmd)
         self.ercf_unload_from_toolhead_sensor_to_extruder(gcmd)
 
         # No slip move for the major calibrated distance
         major_move_step_distance = self.long_move_distance
-        major_move_distance = self.all_variables['calibrated_extruder_to_sensor_length'] - major_move_step_distance
+        major_move_distance = self.all_variables['calibrated_extruder_to_selector_length'] - major_move_step_distance
         self.gear_stepper_move_wait(gcmd, major_move_distance, major_move_step_distance,
                                     raise_on_filament_slip=True, lift_servo=False)
 
@@ -508,8 +509,8 @@ class ERCF(object):
             stage_1_move_distance += filament_move_distance
 
             filament_moved = True
-            # If filament moved less than half of requested length then we consider not moving
-            if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
+            # If filament moved less than a third of requested length then we consider not moving
+            if filament_move_distance < self.calibrate_move_distance_per_step / 3.0:
                 filament_moved = False
 
             gcmd.respond_info('Stage 1: Requested {}, filament measured move: {}, filament moved: {}'.format(
@@ -555,8 +556,8 @@ class ERCF(object):
                 stage_2_move_distance += filament_move_distance
 
                 filament_moved = True
-                # If filament moved less than half of requested length then we consider not moving
-                if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
+                # If filament moved less than a third of requested length then we consider not moving
+                if filament_move_distance < self.calibrate_move_distance_per_step / 3.0:
                     filament_moved = False
 
                 gcmd.respond_info('Stage 2a: Requested {}, Filament measured move: {}'.format(
@@ -593,8 +594,8 @@ class ERCF(object):
                 stage_2_move_distance += filament_move_distance
 
                 filament_moved = True
-                # If filament moved less than half of requested length then we consider not moving
-                if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
+                # If filament moved less than a third of requested length then we consider not moving
+                if filament_move_distance < self.calibrate_move_distance_per_step / 3.0:
                     filament_moved = False
 
                 logging.debug('Stage 2b: Requested {}, Filament present: {}, Filament measured move: {}'.format(
@@ -632,8 +633,8 @@ class ERCF(object):
             stage_3_move_distance += filament_move_distance
 
             filament_moved = True
-            # If filament moved less than half of requested length then we consider not moving
-            if filament_move_distance < self.calibrate_move_distance_per_step / 2.0:
+            # If filament moved less than a third of requested length then we consider not moving
+            if filament_move_distance < self.calibrate_move_distance_per_step / 3.0:
                 filament_moved = False
 
             gcmd.respond_info('Stage 3: Requested {}, Filament measured move: {}'.format(
