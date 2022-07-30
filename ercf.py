@@ -259,7 +259,7 @@ class ERCF(object):
 
     def toolhead_move_wait(self, gcmd, target_move_distance, step_distance=None, raise_on_filament_slip=True,
                            initial_condition_callback=None, stop_condition_callback=None):
-        accumulated_move_distance = self.stepper_move_wait(gcmd,
+        accumulated_move_distance = self.stepper_moave_wait(gcmd,
                                                            target_move_distance=target_move_distance,
                                                            step_distance=step_distance,
                                                            stepper_block_move_callback=self._toolhead_block_move,
@@ -279,7 +279,7 @@ class ERCF(object):
             initial_condition_callback = lambda x=None: x
 
         if step_distance is None:
-            step_distance = min(self.long_move_distance, target_move_distance)
+            step_distance = min(self.long_move_distance, step_distance)
 
         if target_move_distance >= 0:
             direction = 1
