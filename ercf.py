@@ -302,14 +302,11 @@ class ERCF(object):
         self.motion_counter.reset_counts()
 
         accumulated_move_distance = 0
-        gcmd.respond_info('Requested toolhead move distance: {}'.format(target_move_distance))
+        gcmd.respond_info('Requested stepper move distance: {}'.format(target_move_distance))
 
         try:
             prev_state = initial_condition_callback()
-        except StopConditionException:
-            return 0
 
-        try:
             while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
                 # Move
                 self.motion_counter.reset_counts()
@@ -318,7 +315,7 @@ class ERCF(object):
                 filament_move_distance = self.motion_counter.get_distance()
                 accumulated_move_distance += filament_move_distance
 
-                gcmd.respond_info('Stepper requested move distance: {}, measured move distance: {}, accumulated move distance: {}'
+                gcmd.respond_info('Measured move distance: {}, accumulated move distance: {}'
                                   .format(target_move_distance, filament_move_distance, accumulated_move_distance))
 
                 if filament_move_distance < step_distance / 3.0:
