@@ -460,8 +460,7 @@ class ERCF(object):
             accumulated_move_distance += actual_move_distance
 
             # Pull purely by the gear stepper
-            target_move_distance = min(0, self.all_variables[
-                'calibrated_extruder_to_selector_length'] - actual_move_distance - self.long_move_distance)
+            target_move_distance = min(0, self.all_variables['calibrated_extruder_to_selector_length'] - abs(actual_move_distance) - self.long_move_distance)
             actual_move_distance = self.gear_stepper_move_wait(gcmd,
                                                                target_move_distance=-target_move_distance,
                                                                step_distance=target_move_distance,
