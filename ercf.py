@@ -279,7 +279,7 @@ class ERCF(object):
             initial_condition_callback = lambda x=None: x
 
         if step_distance is None:
-            step_distance = min(self.long_move_distance, step_distance)
+            step_distance = min(self.long_move_distance, abs(target_move_distance))
 
         if target_move_distance >= 0:
             direction = 1
