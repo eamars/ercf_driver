@@ -521,7 +521,7 @@ class ERCF(object):
 
             accumulated_move_distance += self.ercf_unload_from_extruder_to_selector(gcmd)
         else:
-            gcmd.respond_info('Unloading unknown location')
+            gcmd.respond_info('Unloading from unknown location')
 
             # Do a short move to verify the filament is still engaged with the filament
             actual_move_distance = self.toolhead_move_wait(gcmd,
