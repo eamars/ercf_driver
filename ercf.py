@@ -607,7 +607,7 @@ class ERCF(object):
                     accumulated_move_distance += actual_move_distance
 
                     # Pull back a little
-                    target_move_distance = 10
+                    target_move_distance = 3
                     actual_move_distance = self.gear_stepper_move_wait(gcmd,
                                                                        target_move_distance=-target_move_distance,
                                                                        step_distance=self.short_move_distance,
