@@ -114,10 +114,12 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_LOAD_FRESH',
                                     self.cmd_ERCF_LOAD_FRESH,
                                     desc='Load the filament to the nozzle')
-
         self.gcode.register_command('_ERCF_UNLOAD',
                                     self.cmd_ERCF_UNLOAD,
                                     desc='Unload the filament back to the selector')
+        self.gcode.register_command('_ERCF_HOME_SELECTOR',
+                                    self.cmd_ERCF_HOME_SELECTOR,
+                                    desc='Home the selector cart')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -132,7 +134,7 @@ class ERCF(object):
 
         # Initialize state machine status
         self._servo_status = None
-        self._ercf_status = None
+        self._filament_tip_status = None
 
     def load_variables(self):
         allvars = {}
@@ -179,6 +181,9 @@ class ERCF(object):
 
     def cmd_ERCF_UNLOAD(self, gcmd):
         self.ercf_unload(gcmd)
+
+    def cmd_ERCF_HOME_SELECTOR(self, gcmd):
+        self.ercf_home_selector(gcmd)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -701,6 +706,41 @@ class ERCF(object):
 
         # we are on the filament sensor, move the final distance
         self.ercf_load_from_toolhead_sensor(gcmd)
+
+    def ercf_home_selector(self, gcmd):
+        num_channels = len(self.all_variables['color_selector_positions'])
+        homing_move_distance = 20 + num_channels * 21 + (num_channels/3.0) * 5
+
+        # Check the filament status
+        self.motion_counter.reset_counts()
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+        motion = self.motion_counter.get_counts()
+        if motion != 0:
+            gcmd.respond_info('Filament is still in the selector card. Will do the unload')
+            self.ercf_unload(gcmd)
+
+        # TODO: Implement the sensorless homing
+        self.selector_stepper.do_set_position(0)
+        self.selector_stepper.do_homing_move(movpos=-homing_move_distance,
+                                             speed=100,
+                                             accel=self.short_moves_accel,
+                                             triggered=True,
+                                             check_trigger=True)
+        self.selector_stepper.do_set_position(0)
+
+        # Retract and do second homing
+        self.selector_stepper.do_move(movepos=5,
+                                      speed=100,
+                                      accel=self.short_moves_accel)
+
+        self.selector_stepper.do_homing_move(movpos=-10,
+                                             speed=20,
+                                             accel=self.short_moves_accel,
+                                             triggered=True,
+                                             check_trigger=True)
+        self.selector_stepper.do_set_position(0)
+        gcmd.respond_info('Selector homed')
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
