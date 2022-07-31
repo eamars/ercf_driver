@@ -748,16 +748,29 @@ class ERCF(object):
         # we are on the filament sensor, move the final distance
         self.ercf_load_from_toolhead_sensor(gcmd)
 
+    def is_filament_in_selector(self):
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+
+            self.motion_counter.reset_counts()
+
+            self.gear_stepper.do_set_position(0)
+            self.gear_stepper.do_move(-3, self.short_moves_speed, self.short_moves_accel, True)
+            self.gear_stepper.do_move(0, self.short_moves_speed, self.short_moves_accel, True)
+            self.toolhead.wait_moves()
+
+            move_distance = self.motion_counter.get_distance()
+
+            self.servo_up()
+
+        return move_distance > 0
+
     def ercf_home_selector(self, gcmd):
         num_channels = len(self.all_variables['color_selector_positions'])
         homing_move_distance = 20 + num_channels * 21 + (num_channels/3.0) * 5
 
         # Check the filament status
-        self.motion_counter.reset_counts()
-        with self._gear_stepper_move_guard():
-            self.servo_down()
-        motion = self.motion_counter.get_counts()
-        if motion != 0:
+        if self.is_filament_in_selector():
             gcmd.respond_info('Filament is still in the selector card. Will do the unload')
             self.ercf_unload(gcmd)
 
@@ -798,11 +811,7 @@ class ERCF(object):
                 raise self.printer.command_error('Selector must be homed before switching to the next tool')
 
             # Check the filament status
-            self.motion_counter.reset_counts()
-            with self._gear_stepper_move_guard():
-                self.servo_down()
-            motion = self.motion_counter.get_counts()
-            if motion != 0:
+            if self.is_filament_in_selector():
                 gcmd.respond_info('Filament is still in the selector card. Will do the unload')
                 self.ercf_unload(gcmd)
 
