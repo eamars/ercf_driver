@@ -706,9 +706,7 @@ class ERCF(object):
             target_distance = self.all_variables['calibrated_extruder_to_selector_length'] - test_move_distance - self.long_move_distance
             actual_distance = self.gear_stepper_move_wait(gcmd,
                                                           target_move_distance=target_distance,
-                                                          step_speed=self.long_moves_speed,
                                                           step_distance=target_distance,
-                                                          step_accel=self.long_moves_accel,
                                                           raise_on_filament_slip=True,
                                                           lift_servo=False)
             accumulated_step_distance += actual_distance
@@ -719,8 +717,6 @@ class ERCF(object):
                 accumulated_step_distance += self.gear_stepper_move_wait(gcmd,
                                                                          target_move_distance=target_distance,
                                                                          step_distance=self.short_move_distance,
-                                                                         step_speed=self.short_moves_speed,
-                                                                         step_accel=self.short_moves_accel,
                                                                          raise_on_filament_slip=False,
                                                                          lift_servo=False)
 
@@ -731,10 +727,8 @@ class ERCF(object):
                                                      stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                      stepper_init_callback=self._toolhead_move_init,
                                                      step_distance=target_distance,
-                                                     step_speed=self.long_moves_speed,
-                                                     step_accel=self.long_moves_accel,
                                                      stop_condition_callback=self._stop_on_filament_present,
-                                                     raise_on_filament_slip=False)
+                                                     raise_on_filament_slip=True)
             accumulated_step_distance += actual_distance
 
             # Release the gear stepper and move to next
