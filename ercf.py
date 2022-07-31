@@ -633,16 +633,17 @@ class ERCF(object):
             with self._gear_stepper_move_guard():
                 # Check if the filament is engaged inside the selector
                 gcmd.respond_info('Check filament engagement inside selector')
+                test_move_distance = 0
                 for i in range(self.selector_filament_engagement_retry):
                     self.servo_down()
-                    test_move_distance = self.stepper_move_wait(gcmd,
-                                                                target_move_distance=self.short_move_distance,
-                                                                stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
-                                                                stepper_init_callback=self._toolhead_move_init,
-                                                                step_distance=self.short_move_distance,
-                                                                step_speed=self.short_moves_speed,
-                                                                step_accel=self.short_moves_accel,
-                                                                raise_on_filament_slip=False)
+                    test_move_distance += self.stepper_move_wait(gcmd,
+                                                                 target_move_distance=self.short_move_distance * 2,
+                                                                 stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
+                                                                 stepper_init_callback=self._toolhead_move_init,
+                                                                 step_distance=self.short_move_distance,
+                                                                 step_speed=self.short_moves_speed,
+                                                                 step_accel=self.short_moves_accel,
+                                                                 raise_on_filament_slip=False)
                     if test_move_distance > 0:
                         break
                     else:
@@ -681,12 +682,15 @@ class ERCF(object):
         accumulated_step_distance = 0
         with self._gear_stepper_move_guard():
             # Check gear engagement
+            test_move_distance = 0
             for i in range(self.selector_filament_engagement_retry):
                 self.servo_down()
-                test_move_distance = self.gear_stepper_move_wait(gcmd,
-                                                                 target_move_distance=self.short_move_distance,
-                                                                 raise_on_filament_slip=False,
-                                                                 lift_servo=False)
+                test_move_distance += self.gear_stepper_move_wait(gcmd,
+                                                                  target_move_distance=self.short_move_distance * 2,
+                                                                  step_distance=self.short_move_distance,
+                                                                  step_accel=self.short_moves_accel,
+                                                                  raise_on_filament_slip=False,
+                                                                  lift_servo=False)
                 if test_move_distance > 0:
                     break
                 else:
@@ -698,7 +702,7 @@ class ERCF(object):
 
             # Do a single move to feed the filament to the extruder
             accumulated_step_distance = test_move_distance
-            target_distance = self.all_variables['calibrated_extruder_to_selector_length'] - self.long_move_distance
+            target_distance = self.all_variables['calibrated_extruder_to_selector_length'] - test_move_distance - self.long_move_distance
             actual_distance = self.gear_stepper_move_wait(gcmd,
                                                           target_move_distance=target_distance,
                                                           step_distance=target_distance,
