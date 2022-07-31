@@ -6,6 +6,7 @@ import logging
 import ast
 import time
 from contextlib import contextmanager
+from itertools import product
 
 
 class EncoderCounter:
@@ -99,9 +100,7 @@ class ERCF(object):
 
         # GCode commands
         self.gcode = self.printer.lookup_object('gcode')
-        self.gcode.register_command('_ERCF_CALIBRATE_COMPONENT_LENGTH',
-                                    self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
-                                    desc='Execute the calibration routine on the current tool')
+
         self.gcode.register_command('_ERCF_SERVO_UP',
                                     self.cmd_ERCF_SERVO_UP,
                                     desc='Lift the servo arm to release the gear')
@@ -126,6 +125,14 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_CHANGE_TOOL',
                                     self.cmd_ERCF_CHANGE_TOOL,
                                     desc='Tool change gcode')
+
+        # Calibration
+        self.gcode.register_command('_ERCF_CALIBRATE_ENCODER_RESOLUTION',
+                                    self.calibrate_encoder_resolution,
+                                    desc='Tool change gcode')
+        self.gcode.register_command('_ERCF_CALIBRATE_COMPONENT_LENGTH',
+                                    self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
+                                    desc='Execute the calibration routine on the current tool')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -803,6 +810,33 @@ class ERCF(object):
     def ercf_change_tool(self, gcmd, tool_idx):
         self.ercf_move_selector_to_tool(gcmd, tool_idx)
         self.ercf_load_fresh(gcmd)
+
+    def set_gear_stepper_rotation_distance(self, new_rotation_distance):
+        self.gear_stepper.steppers[0].set_rotation_distance(new_rotation_distance)
+
+    def calibrate_encoder_resolution(self, gcmd):
+        calibrate_move_distance = gcmd.get_float('DISTANCE', 500)
+        repeats = gcmd.get_int('REPEATS', 2)
+
+        speeds = [self.long_moves_speed, self.short_moves_speed]
+        accels = [self.long_moves_accel, self.short_moves_accel]
+
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+            for speed, accel in product(speeds, accels):
+                for _ in range(repeats):
+                    self.motion_counter.reset_counts()
+                    self.gear_stepper_move_wait(gcmd,
+                                                target_move_distance=calibrate_move_distance,
+                                                step_distance=calibrate_move_distance,
+                                                step_speed=speed,
+                                                step_accel=accel,
+                                                raise_on_filament_slip=True,
+                                                lift_servo=False)
+                    count = self.motion_counter.get_counts()
+                    count_per_mm = count / calibrate_move_distance
+                    gcmd.respond_info('Count: {}, Count per mm: {}'.format(count, count_per_mm))
+            self.servo_down()
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
