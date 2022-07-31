@@ -816,7 +816,7 @@ class ERCF(object):
 
     def calibrate_encoder_resolution(self, gcmd):
         calibrate_move_distance = gcmd.get_float('DISTANCE', 500)
-        repeats = gcmd.get_int('REPEATS', 2)
+        repeats = gcmd.get_int('REPEATS', 1)
 
         speeds = [self.long_moves_speed, self.short_moves_speed]
         accels = [self.long_moves_accel, self.short_moves_accel]
@@ -825,6 +825,7 @@ class ERCF(object):
             self.servo_down()
             for speed, accel in product(speeds, accels):
                 for _ in range(repeats):
+                    gcmd.respond_info('Speed: {}, Acceleration: {}'.format(speed, accel))
                     # Moving forwards
                     self.motion_counter.reset_counts()
                     self.gear_stepper_move_wait(gcmd,
@@ -836,7 +837,7 @@ class ERCF(object):
                                                 lift_servo=False)
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
-                    gcmd.respond_info('Count: {}, Count per mm: {}'.format(count, count_per_mm))
+                    gcmd.respond_info('Forward Count: {}, Count per mm: {}'.format(count, count_per_mm))
 
                     # Moving backwards
                     self.motion_counter.reset_counts()
@@ -849,7 +850,8 @@ class ERCF(object):
                                                 lift_servo=False)
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
-                    gcmd.respond_info('Count: {}, Count per mm: {}'.format(count, count_per_mm))
+                    gcmd.respond_info('Backward Count: {}, Count per mm: {}'
+                                      .format(speed, accel, count, count_per_mm))
 
             self.servo_down()
 
