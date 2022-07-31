@@ -780,9 +780,9 @@ class ERCF(object):
             self.selector_stepper.do_move(movepos=cart_move_distance,
                                           speed=100,
                                           accel=self.short_moves_accel)
-            gcmd.respond_info('Tool {} is selected')
+            gcmd.respond_info('Tool {} is selected'.format(tool_idx))
         else:
-            gcmd.respond_info('Tool {} is already selected')
+            gcmd.respond_info('Tool {} is already selected'.format(tool_idx))
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
