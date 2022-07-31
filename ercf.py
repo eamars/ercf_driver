@@ -7,6 +7,7 @@ import ast
 import time
 from contextlib import contextmanager
 from itertools import product
+import statistics
 
 
 class EncoderCounter:
@@ -34,6 +35,9 @@ class EncoderCounter:
 
     def get_distance(self):
         return (self._counts/2.) * self._encoder_steps
+
+    def set_encoder_steps(self, new_steps):
+        self._encoder_steps = new_steps
 
     def set_distance(self, new_distance):
         self._counts = int( ( new_distance / self._encoder_steps ) * 2. )
@@ -823,6 +827,7 @@ class ERCF(object):
         speeds = [self.long_moves_speed, self.short_moves_speed]
         accels = [self.long_moves_accel, self.short_moves_accel]
 
+        count_list = []
         with self._gear_stepper_move_guard():
             self.servo_down()
             for speed, accel in product(speeds, accels):
@@ -836,19 +841,29 @@ class ERCF(object):
                     self.toolhead.wait_moves()
 
                     count = self.motion_counter.get_counts()
-                    count_per_mm = count / calibrate_move_distance
-                    gcmd.respond_info('Forward Count: {}, Count per mm: {}'.format(count, count_per_mm))
+                    gcmd.respond_info('Forward Count: {}'.format(count))
 
                     # Moving backwards
                     self.motion_counter.reset_counts()
                     self.gear_stepper.do_move(0, speed, accel, True)
                     self.toolhead.wait_moves()
                     count = self.motion_counter.get_counts()
-                    count_per_mm = count / calibrate_move_distance
-                    gcmd.respond_info('Backward Count: {}, Count per mm: {}'
-                                      .format(count, count_per_mm))
+                    gcmd.respond_info('Backward Count: {}'.format(count))
 
-            self.servo_down()
+            self.servo_up()
+
+        median = statistics.median(count_list)
+
+        # TODO: Why half median?
+        half_median = median / 2
+        resolution = calibrate_move_distance / half_median
+
+        gcmd.respond_info('Old resolution: {}, New resolution: {}'.format(self.all_variables['calibrated_encoder_resolution'],
+                                                                          resolution))
+        # Apply result
+        self.motion_counter.set_encoder_steps(resolution)
+        self.all_variables['calibrated_encoder_resolution'] = resolution
+        self.save_variables()
 
     def calibrate_gear_stepper_rotation_distance(self, gcmd):
         with self._gear_stepper_move_guard():
