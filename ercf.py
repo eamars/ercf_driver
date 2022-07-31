@@ -137,6 +137,7 @@ class ERCF(object):
 
         # Initialize state machine status
         self._servo_status = None
+        self._is_selector_homed = False
 
     @property
     def _current_tool(self):
@@ -758,11 +759,15 @@ class ERCF(object):
 
         # Unset the selector
         self._current_tool = None
+        self._is_selector_homed = True
 
         gcmd.respond_info('Selector homed')
 
     def ercf_move_selector_to_tool(self, gcmd, tool_idx):
         if self._current_tool != tool_idx:
+            if not self._is_selector_homed:
+                raise self.printer.command_error('Selector must be homed before switching to the next tool')
+
             # Check the filament status
             self.motion_counter.reset_counts()
             with self._gear_stepper_move_guard():
