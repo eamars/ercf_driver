@@ -827,7 +827,8 @@ class ERCF(object):
         speeds = [self.long_moves_speed, self.short_moves_speed]
         accels = [self.long_moves_accel, self.short_moves_accel]
 
-        count_list = []
+        forward_count = []
+        backward_count = []
         with self._gear_stepper_move_guard():
             self.servo_down()
             for speed, accel in product(speeds, accels):
@@ -842,6 +843,7 @@ class ERCF(object):
 
                     count = self.motion_counter.get_counts()
                     gcmd.respond_info('Forward Count: {}'.format(count))
+                    forward_count.append(count)
 
                     # Moving backwards
                     self.motion_counter.reset_counts()
@@ -849,14 +851,16 @@ class ERCF(object):
                     self.toolhead.wait_moves()
                     count = self.motion_counter.get_counts()
                     gcmd.respond_info('Backward Count: {}'.format(count))
+                    backward_count.append(count)
 
             self.servo_up()
 
-        median = statistics.median(count_list)
+        forward_median = statistics.median(forward_count)
+        backward_median = statistics.median(backward_count)
+        half_mean = forward_median + backward_median / 4
 
         # TODO: Why half median?
-        half_median = median / 2
-        resolution = calibrate_move_distance / half_median
+        resolution = calibrate_move_distance / half_mean
 
         gcmd.respond_info('Old resolution: {}, New resolution: {}'.format(self.all_variables['calibrated_encoder_resolution'],
                                                                           resolution))
