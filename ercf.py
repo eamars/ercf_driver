@@ -49,7 +49,7 @@ class EncoderCounter:
 class StopConditionException(Exception):
     pass
 
-class FilamentSlipException(StopConditionException)
+class FilamentSlipException(StopConditionException):
     pass
 
 
