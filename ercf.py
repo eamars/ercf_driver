@@ -7,7 +7,7 @@ import ast
 import time
 from contextlib import contextmanager
 from itertools import product
-import statistics
+from numpy import median
 
 
 class EncoderCounter:
@@ -855,8 +855,8 @@ class ERCF(object):
 
             self.servo_up()
 
-        forward_median = statistics.median(forward_count)
-        backward_median = statistics.median(backward_count)
+        forward_median = median(forward_count)
+        backward_median = median(backward_count)
         half_mean = forward_median + backward_median / 4
 
         # TODO: Why half median?
