@@ -124,6 +124,11 @@ class ERCF(object):
                                     self.cmd_ERCF_MOVE_SELECTOR_TO_TOOL,
                                     desc='Move the selector cart to the corresponding tool')
 
+        for tool_idx, _ in enumerate(self.all_variables['color_selector_positions']):
+            self.gcode.register_command('T{}'.format(tool_idx),
+                                        self.cmd_ERCF_TOOL_CHANGE,
+                                        desc='Tool change gcode')
+
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
 
@@ -200,6 +205,10 @@ class ERCF(object):
     def cmd_ERCF_MOVE_SELECTOR_TO_TOOL(self, gcmd):
         tool_idx = gcmd.get_int('TOOL')
         self.ercf_move_selector_to_tool(gcmd, tool_idx)
+
+    def cmd_ERCF_TOOL_CHANGE(self, gcmd):
+        command = gcmd.get_command()
+        gcmd.respond_info('Requesting {}'.format(command))
 
     def servo_up(self):
         if self._servo_status != 'up':
