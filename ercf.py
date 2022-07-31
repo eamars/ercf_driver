@@ -825,6 +825,7 @@ class ERCF(object):
             self.servo_down()
             for speed, accel in product(speeds, accels):
                 for _ in range(repeats):
+                    # Moving forwards
                     self.motion_counter.reset_counts()
                     self.gear_stepper_move_wait(gcmd,
                                                 target_move_distance=calibrate_move_distance,
@@ -836,6 +837,20 @@ class ERCF(object):
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
                     gcmd.respond_info('Count: {}, Count per mm: {}'.format(count, count_per_mm))
+
+                    # Moving backwards
+                    self.motion_counter.reset_counts()
+                    self.gear_stepper_move_wait(gcmd,
+                                                target_move_distance=-calibrate_move_distance,
+                                                step_distance=calibrate_move_distance,
+                                                step_speed=speed,
+                                                step_accel=accel,
+                                                raise_on_filament_slip=True,
+                                                lift_servo=False)
+                    count = self.motion_counter.get_counts()
+                    count_per_mm = count / calibrate_move_distance
+                    gcmd.respond_info('Count: {}, Count per mm: {}'.format(count, count_per_mm))
+
             self.servo_down()
 
     def calibrate_component_length(self, gcmd):
