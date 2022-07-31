@@ -120,6 +120,9 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_HOME_SELECTOR',
                                     self.cmd_ERCF_HOME_SELECTOR,
                                     desc='Home the selector cart')
+        self.gcode.register_command('_ERCF_MOVE_SELECTOR_TO_TOOL',
+                                    self.cmd_ERCF_MOVE_SELECTOR_TO_TOOL,
+                                    desc='Move the selector cart to the corresponding tool')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -134,7 +137,15 @@ class ERCF(object):
 
         # Initialize state machine status
         self._servo_status = None
-        self._filament_tip_status = None
+
+    @property
+    def _current_tool(self):
+        return self.all_variables.get('_current_tool', None)
+
+    @_current_tool.setter
+    def _current_tool(self, tool_idx):
+        self.all_variables['_current_tool'] = tool_idx
+        self.save_variables()
 
     def load_variables(self):
         allvars = {}
@@ -184,6 +195,10 @@ class ERCF(object):
 
     def cmd_ERCF_HOME_SELECTOR(self, gcmd):
         self.ercf_home_selector(gcmd)
+
+    def cmd_ERCF_MOVE_SELECTOR_TO_TOOL(self, gcmd):
+        tool_idx = gcmd.get_int('TOOL')
+        self.ercf_move_selector_to_tool(gcmd, tool_idx)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -740,7 +755,34 @@ class ERCF(object):
                                              triggered=True,
                                              check_trigger=True)
         self.selector_stepper.do_set_position(0)
+
+        # Unset the selector
+        self._current_tool = None
+
         gcmd.respond_info('Selector homed')
+
+    def ercf_move_selector_to_tool(self, gcmd, tool_idx):
+        if self._current_tool != tool_idx:
+            # Check the filament status
+            self.motion_counter.reset_counts()
+            with self._gear_stepper_move_guard():
+                self.servo_down()
+            motion = self.motion_counter.get_counts()
+            if motion != 0:
+                gcmd.respond_info('Filament is still in the selector card. Will do the unload')
+                self.ercf_unload(gcmd)
+
+            # Move the selector
+            color_selector_positions = self.all_variables['color_selector_positions']
+            if tool_idx >= len(color_selector_positions):
+                raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
+            cart_move_distance = color_selector_positions[tool_idx]
+            self.selector_stepper.do_move(movepos=cart_move_distance,
+                                          speed=100,
+                                          accel=self.short_moves_accel)
+            gcmd.respond_info('Tool {} is selected')
+        else:
+            gcmd.respond_info('Tool {} is already selected')
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
