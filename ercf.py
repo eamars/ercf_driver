@@ -827,26 +827,19 @@ class ERCF(object):
                     gcmd.respond_info('Speed: {}, Acceleration: {}'.format(speed, accel))
                     # Moving forwards
                     self.motion_counter.reset_counts()
-                    self.gear_stepper_move_wait(gcmd,
-                                                target_move_distance=calibrate_move_distance,
-                                                step_distance=calibrate_move_distance,
-                                                step_speed=speed,
-                                                step_accel=accel,
-                                                raise_on_filament_slip=False,
-                                                lift_servo=False)
+
+                    self.gear_stepper.do_set_position(0)
+                    self.gear_stepper.do_move(calibrate_move_distance, speed, accel, True)
+                    self.toolhead.wait_moves()
+
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
                     gcmd.respond_info('Forward Count: {}, Count per mm: {}'.format(count, count_per_mm))
 
                     # Moving backwards
                     self.motion_counter.reset_counts()
-                    self.gear_stepper_move_wait(gcmd,
-                                                target_move_distance=-calibrate_move_distance,
-                                                step_distance=calibrate_move_distance,
-                                                step_speed=speed,
-                                                step_accel=accel,
-                                                raise_on_filament_slip=False,
-                                                lift_servo=False)
+                    self.gear_stepper.do_move(0, speed, accel, True)
+                    self.toolhead.wait_moves()
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
                     gcmd.respond_info('Backward Count: {}, Count per mm: {}'
