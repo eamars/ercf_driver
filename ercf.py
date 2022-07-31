@@ -336,7 +336,7 @@ class ERCF(object):
         try:
             prev_state = initial_condition_callback()
 
-            while (abs(target_move_distance) - accumulated_move_distance) > step_distance:
+            while (abs(target_move_distance) - accumulated_move_distance) >= step_distance:
                 # Move
                 self.motion_counter.reset_counts()
                 stepper_status = stepper_block_move_callback(stepper_status, relative_step_distance, step_speed, step_accel)
@@ -393,7 +393,6 @@ class ERCF(object):
         self.gear_stepper.do_set_position(0)
         self.gear_stepper.do_move(relative_step_distance, speed, accel, sync=True)
         self.toolhead.wait_moves()  # WHY TOOLHEAD??
-
         return None
 
     def _toolhead_gear_stepper_synchronized_block_move(self, toolhead_position, relative_step_distance, speed, accel):
@@ -833,7 +832,7 @@ class ERCF(object):
                                                 step_distance=calibrate_move_distance,
                                                 step_speed=speed,
                                                 step_accel=accel,
-                                                raise_on_filament_slip=True,
+                                                raise_on_filament_slip=False,
                                                 lift_servo=False)
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
@@ -846,7 +845,7 @@ class ERCF(object):
                                                 step_distance=calibrate_move_distance,
                                                 step_speed=speed,
                                                 step_accel=accel,
-                                                raise_on_filament_slip=True,
+                                                raise_on_filament_slip=False,
                                                 lift_servo=False)
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
