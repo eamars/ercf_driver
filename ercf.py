@@ -843,7 +843,7 @@ class ERCF(object):
                     count = self.motion_counter.get_counts()
                     count_per_mm = count / calibrate_move_distance
                     gcmd.respond_info('Backward Count: {}, Count per mm: {}'
-                                      .format(speed, accel, count, count_per_mm))
+                                      .format(count, count_per_mm))
 
             self.servo_down()
 
