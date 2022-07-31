@@ -780,7 +780,10 @@ class ERCF(object):
             self.selector_stepper.do_move(movepos=cart_move_distance,
                                           speed=100,
                                           accel=self.short_moves_accel)
+
+            self._current_tool = tool_idx
             gcmd.respond_info('Tool {} is selected'.format(tool_idx))
+
         else:
             gcmd.respond_info('Tool {} is already selected'.format(tool_idx))
 
