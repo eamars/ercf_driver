@@ -85,7 +85,7 @@ class ERCF(object):
         self.extra_move_margin = config.getfloat('extra_move_margin', 100)
         self.long_move_distance = config.getfloat('long_move_distance', 30)
         self.short_move_distance = config.getfloat('short_move_distance', 10)
-        self.minimum_step_distance = config.getfloat('minimum_step_distance', 3)
+        self.minimum_step_distance = config.getfloat('minimum_step_distance', 5)
         self.calibrate_move_distance_per_step = config.getfloat('calibrate_move_distance_per_step', 3)
 
         self.servo_up_angle = config.getfloat('servo_up_angle')
