@@ -722,7 +722,7 @@ class ERCF(object):
 
         # TODO: Implement the sensorless homing
         self.selector_stepper.do_set_position(0)
-        self.selector_stepper.do_homing_move(movpos=-homing_move_distance,
+        self.selector_stepper.do_homing_move(movepos=-homing_move_distance,
                                              speed=100,
                                              accel=self.short_moves_accel,
                                              triggered=True,
@@ -734,7 +734,7 @@ class ERCF(object):
                                       speed=100,
                                       accel=self.short_moves_accel)
 
-        self.selector_stepper.do_homing_move(movpos=-10,
+        self.selector_stepper.do_homing_move(movepos=-10,
                                              speed=20,
                                              accel=self.short_moves_accel,
                                              triggered=True,
