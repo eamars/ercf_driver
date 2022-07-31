@@ -857,7 +857,7 @@ class ERCF(object):
 
         forward_median = median(forward_count)
         backward_median = median(backward_count)
-        half_mean = forward_median + backward_median / 4
+        half_mean = (forward_median + backward_median) / 4
 
         # TODO: Why half median?
         resolution = calibrate_move_distance / half_mean
