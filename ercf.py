@@ -739,7 +739,7 @@ class ERCF(object):
             self.servo_up()
 
         # Move together with the extruder with a single long move
-        target_distance = self.all_variables['calibrated_sensor_to_extruder_length'] - self.long_move_distance
+        target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) - self.long_move_distance
         actual_distance = self.toolhead_move_wait(gcmd,
                                                   target_move_distance=target_distance,
                                                   step_distance=target_distance,
@@ -754,7 +754,7 @@ class ERCF(object):
         target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) + self.long_move_distance
         accumulated_step_distance += self.toolhead_move_wait(gcmd,
                                                              target_move_distance=target_distance,
-                                                             step_distance=self.short_move_distance,
+                                                             step_distance=min(10, self.short_move_distance),
                                                              step_speed=self.short_moves_speed,
                                                              raise_on_filament_slip=True,
                                                              stop_condition_callback=self._stop_on_filament_present)
