@@ -83,9 +83,9 @@ class ERCF(object):
 
         # Step distance
         self.extra_move_margin = config.getfloat('extra_move_margin', 100)
-        self.long_move_distance = config.getfloat('long_move_distance', 10)
-        self.short_move_distance = config.getfloat('short_move_distance', 3)
-        self.minimum_step_distance = config.getfloat('minimum_step_distance', 2)
+        self.long_move_distance = config.getfloat('long_move_distance', 30)
+        self.short_move_distance = config.getfloat('short_move_distance', 10)
+        self.minimum_step_distance = config.getfloat('minimum_step_distance', 3)
         self.calibrate_move_distance_per_step = config.getfloat('calibrate_move_distance_per_step', 3)
 
         self.servo_up_angle = config.getfloat('servo_up_angle')
@@ -341,7 +341,7 @@ class ERCF(object):
 
             while remain_distance > 0:
                 # Calculate step
-                step_distance = min(step_distance, remain_distance)
+                step_distance = max(min(step_distance, remain_distance), self.minimum_step_distance)
                 relative_step_distance = step_distance * direction
 
                 # Update default step speed and acceleration
