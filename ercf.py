@@ -851,10 +851,13 @@ class ERCF(object):
             self.servo_down()
 
     def calibrate_gear_stepper_rotation_distance(self, gcmd):
-        calibrate_move_distance = gcmd.get_float('DISTANCE', 100)
-        self.gear_stepper.do_set_position(0)
-        self.gear_stepper.do_move(calibrate_move_distance, self.short_moves_speed, self.short_moves_accel, True)
-        self.toolhead.wait_moves()
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+            calibrate_move_distance = gcmd.get_float('DISTANCE', 100)
+            self.gear_stepper.do_set_position(0)
+            self.gear_stepper.do_move(calibrate_move_distance, self.short_moves_speed, self.short_moves_accel, True)
+            self.toolhead.wait_moves()
+            self.servo_up()
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
