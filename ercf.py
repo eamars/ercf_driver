@@ -129,10 +129,13 @@ class ERCF(object):
         # Calibration
         self.gcode.register_command('_ERCF_CALIBRATE_ENCODER_RESOLUTION',
                                     self.calibrate_encoder_resolution,
-                                    desc='Tool change gcode')
+                                    desc='Calibrate the resolution of the encoder')
         self.gcode.register_command('_ERCF_CALIBRATE_COMPONENT_LENGTH',
                                     self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
                                     desc='Execute the calibration routine on the current tool')
+        self.gcode.register_command('_ERCF_CALIBRATE_GEAR_STEPPER_ROTATION_DISTANCE',
+                                    self.calibrate_gear_stepper_rotation_distance,
+                                    desc='Calibrate the rotation distance')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -846,6 +849,12 @@ class ERCF(object):
                                       .format(count, count_per_mm))
 
             self.servo_down()
+
+    def calibrate_gear_stepper_rotation_distance(self, gcmd):
+        calibrate_move_distance = gcmd.get_float('DISTANCE', 100)
+        self.gear_stepper.do_set_position(0)
+        self.gear_stepper.do_move(calibrate_move_distance, self.short_moves_speed, self.short_moves_accel, True)
+        self.toolhead.wait_moves()
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
