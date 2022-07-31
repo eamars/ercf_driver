@@ -123,11 +123,9 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_MOVE_SELECTOR_TO_TOOL',
                                     self.cmd_ERCF_MOVE_SELECTOR_TO_TOOL,
                                     desc='Move the selector cart to the corresponding tool')
-
-        for tool_idx, _ in enumerate(self.all_variables['color_selector_positions']):
-            self.gcode.register_command('T{}'.format(tool_idx),
-                                        self.cmd_ERCF_TOOL_CHANGE,
-                                        desc='Tool change gcode')
+        self.gcode.register_command('_ERCF_CHANGE_TOOL',
+                                    self.cmd_ERCF_CHANGE_TOOL,
+                                    desc='Tool change gcode')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -206,9 +204,9 @@ class ERCF(object):
         tool_idx = gcmd.get_int('TOOL')
         self.ercf_move_selector_to_tool(gcmd, tool_idx)
 
-    def cmd_ERCF_TOOL_CHANGE(self, gcmd):
-        command = gcmd.get_command()
-        gcmd.respond_info('Requesting {}'.format(command))
+    def cmd_ERCF_CHANGE_TOOL(self, gcmd):
+        tool_idx = gcmd.get_int('TOOL')
+        self.ercf_change_tool(gcmd, tool_idx)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -801,6 +799,10 @@ class ERCF(object):
 
         else:
             gcmd.respond_info('Tool {} is already selected'.format(tool_idx))
+
+    def ercf_change_tool(self, gcmd, tool_idx):
+        self.ercf_move_selector_to_tool(gcmd, tool_idx)
+        self.ercf_load_fresh(gcmd)
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
