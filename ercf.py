@@ -741,7 +741,7 @@ class ERCF(object):
                                                      target_move_distance=target_distance,
                                                      stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                      stepper_init_callback=self._toolhead_move_init,
-                                                     step_distance=self.short_move_distance,
+                                                     step_distance=target_distance,
                                                      raise_on_filament_slip=True)
             accumulated_step_distance += actual_distance
 
