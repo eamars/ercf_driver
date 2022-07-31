@@ -764,6 +764,10 @@ class ERCF(object):
         gcmd.respond_info('Selector homed')
 
     def ercf_move_selector_to_tool(self, gcmd, tool_idx):
+        color_selector_positions = self.all_variables['color_selector_positions']
+        if tool_idx >= len(color_selector_positions):
+            raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
+
         if self._current_tool != tool_idx:
             if not self._is_selector_homed:
                 raise self.printer.command_error('Selector must be homed before switching to the next tool')
@@ -778,9 +782,6 @@ class ERCF(object):
                 self.ercf_unload(gcmd)
 
             # Move the selector
-            color_selector_positions = self.all_variables['color_selector_positions']
-            if tool_idx >= len(color_selector_positions):
-                raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
             cart_move_distance = color_selector_positions[tool_idx]
             self.selector_stepper.do_move(movepos=cart_move_distance,
                                           speed=100,
