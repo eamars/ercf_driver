@@ -637,10 +637,10 @@ class ERCF(object):
                 for i in range(self.selector_filament_engagement_retry):
                     self.servo_down()
                     test_move_distance += self.stepper_move_wait(gcmd,
-                                                                 target_move_distance=self.short_move_distance * 2,
+                                                                 target_move_distance=30,
                                                                  stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                                  stepper_init_callback=self._toolhead_move_init,
-                                                                 step_distance=self.short_move_distance,
+                                                                 step_distance=30,
                                                                  step_speed=self.short_moves_speed,
                                                                  step_accel=self.short_moves_accel,
                                                                  raise_on_filament_slip=False)
@@ -686,8 +686,8 @@ class ERCF(object):
             for i in range(self.selector_filament_engagement_retry):
                 self.servo_down()
                 test_move_distance += self.gear_stepper_move_wait(gcmd,
-                                                                  target_move_distance=self.short_move_distance * 2,
-                                                                  step_distance=self.short_move_distance,
+                                                                  target_move_distance=30,
+                                                                  step_distance=30,
                                                                   step_speed=self.short_moves_speed,
                                                                   step_accel=self.short_moves_accel,
                                                                   raise_on_filament_slip=False,
