@@ -850,11 +850,11 @@ class ERCF(object):
             raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
 
         if self._current_tool != tool_idx:
-            if self._current_tool is None and not force:
+            if not force and self._current_tool is None:
                 raise self.printer.command_error('Selector must be homed before switching to the next tool')
 
             # Check the filament status
-            if self.is_filament_in_selector() and not force:
+            if not force and self.is_filament_in_selector():
                 gcmd.respond_info('Filament is still in the selector card. Will do the unload')
                 self.ercf_unload(gcmd)
 
