@@ -774,18 +774,34 @@ class ERCF(object):
 
     def is_filament_in_selector(self):
         with self._gear_stepper_move_guard():
-            self.servo_down()
-
             self.motion_counter.reset_counts()
-
-            self.gear_stepper.do_set_position(0)
-            self.gear_stepper.do_move(-3, self.short_moves_speed, self.short_moves_accel, True)
-            self.gear_stepper.do_move(0, self.short_moves_speed, self.short_moves_accel, True)
-            self.toolhead.wait_moves()
-
+            self.servo_down()
             move_distance = self.motion_counter.get_distance()
 
-        return move_distance > 0
+            if move_distance > 0:
+                return True
+
+            # Secondary check (tiny moving distance)
+            self.gear_stepper.do_set_position(0)
+            self.motion_counter.reset_counts()
+            self.gear_stepper.do_move(1, self.short_moves_speed, self.short_moves_accel, True)
+            self.gear_stepper.do_move(0, self.short_moves_speed, self.short_moves_accel, True)
+            move_distance = self.motion_counter.get_distance()
+
+            if move_distance > 0:
+                return True
+
+            # Third check (move 8mm forward to check if the
+            self.gear_stepper.do_set_position(0)
+            self.gear_stepper.do_move(8, self.short_moves_speed, self.short_moves_accel, True)
+            self.gear_stepper.do_move(0, self.short_moves_speed, self.short_moves_accel, True)
+            self.toolhead.wait_moves()
+            move_distance = self.motion_counter.get_distance()
+
+            if move_distance > 0:
+                return True
+
+        return False
 
     def ercf_home_selector(self, gcmd):
         num_channels = len(self.all_variables['color_selector_positions'])
