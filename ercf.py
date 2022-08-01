@@ -854,7 +854,7 @@ class ERCF(object):
                 raise self.printer.command_error('Selector must be homed before switching to the next tool')
 
             # Check the filament status
-            if self.is_filament_in_selector():
+            if self.is_filament_in_selector() and not force:
                 gcmd.respond_info('Filament is still in the selector card. Will do the unload')
                 self.ercf_unload(gcmd)
 
