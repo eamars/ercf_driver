@@ -881,17 +881,19 @@ class ERCF(object):
         self.selector_stepper.do_set_position(0)
 
         # Do the homing move
+        initial_position = self.selector_stepper.get_position()[0]
         self.selector_stepper.do_homing_move(movepos=-homing_move_distance,
                                              speed=50,
                                              accel=self.short_moves_accel,
                                              triggered=True,
                                              check_trigger=True)
 
-        traveled_distance = abs(self.selector_stepper.get_position()[0])
+        final_position = abs(self.selector_stepper.get_position()[0])
+        travel_distance = final_position - initial_position
 
-        gcmd.respond_info('Tool {} location: {}'.format(tool_idx, traveled_distance))
+        gcmd.respond_info('Tool {} location: {}'.format(tool_idx, travel_distance))
 
-        self.all_variables['color_selector_positions'][tool_idx] = traveled_distance
+        self.all_variables['color_selector_positions'][tool_idx] = travel_distance
 
         self.save_variables()
 
