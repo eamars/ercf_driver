@@ -146,6 +146,9 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_CALIBRATE_SELECTOR_LOCATION',
                                     self.cmd_ERCF_CALIBRATE_SELECTOR_LOCATION,
                                     desc='Locate the selector')
+        self.gcode.register_command('_ERCF_CALIBRATE_EXTRUSION_FACTOR',
+                                    self.cmd_ERCF_CALIBRATE_EXTRUSION_FACTOR,
+                                    desc='Calibrate the extrusion factor against the reference channel')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -222,6 +225,10 @@ class ERCF(object):
     def cmd_ERCF_CALIBRATE_SELECTOR_LOCATION(self, gcmd):
         tool_idx = gcmd.get_int('TOOL')
         self.calibrate_selector_location(gcmd, tool_idx)
+
+    def cmd_ERCF_CALIBRATE_EXTRUSION_FACTOR(self, gcmd):
+        tool_idx = gcmd.get_int('TOOL')
+        self.calibrate_extrusion_factor(gcmd, tool_idx)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -866,6 +873,8 @@ class ERCF(object):
         self.ercf_move_selector_to_tool(gcmd, tool_idx)
         self.ercf_load_fresh(gcmd)
 
+        # TODO: Change extrusion factor
+
     def set_gear_stepper_rotation_distance(self, new_rotation_distance):
         self.gear_stepper.steppers[0].set_rotation_distance(new_rotation_distance)
 
@@ -958,6 +967,55 @@ class ERCF(object):
             self.gear_stepper.do_move(calibrate_move_distance, self.short_moves_speed, self.short_moves_accel, True)
             self.toolhead.wait_moves()
             self.servo_up()
+
+    def calibrate_extrusion_factor(self, gcmd, tool_idx):
+        repeats = gcmd.get_int('REPEATS', 1)
+        calibrate_move_distance = min(self.all_variables['calibrated_selector_to_extruder_length'] * 0.66, 200)
+
+        self.ercf_move_selector_to_tool(gcmd, tool_idx)
+
+        speeds = [self.long_moves_speed, self.short_moves_speed]
+        accels = [self.long_moves_accel, self.short_moves_accel]
+
+        forward_count = []
+        backward_count = []
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+            for speed, accel in product(speeds, accels):
+                for _ in range(repeats):
+                    gcmd.respond_info('Speed: {}, Acceleration: {}'.format(speed, accel))
+                    # Moving forwards
+                    self.motion_counter.reset_counts()
+
+                    self.gear_stepper.do_set_position(0)
+                    self.gear_stepper.do_move(calibrate_move_distance, speed, accel, True)
+                    self.toolhead.wait_moves()
+
+                    count = self.motion_counter.get_distance()
+                    gcmd.respond_info('Forward Count: {}'.format(count))
+                    forward_count.append(count)
+
+                    # Moving backwards
+                    self.motion_counter.reset_counts()
+                    self.gear_stepper.do_move(0, speed, accel, True)
+                    self.toolhead.wait_moves()
+                    count = self.motion_counter.get_distance()
+                    gcmd.respond_info('Backward Count: {}'.format(count))
+                    backward_count.append(count)
+
+            self.servo_up()
+
+        forward_median = median(forward_count)
+        backward_median = median(backward_count)
+        mean = (forward_median + backward_median) / 2.0
+
+        extrusion_factor = calibrate_move_distance / mean
+
+        gcmd.respond_info('Tool {} extrusion factor: {}'.format(tool_idx, extrusion_factor))
+
+        # Apply
+        self.all_variables['calibrated_tool_extrusion_factor'][tool_idx] = extrusion_factor
+        self.save_variables()
 
     def calibrate_component_length(self, gcmd):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
