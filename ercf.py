@@ -970,7 +970,7 @@ class ERCF(object):
 
     def calibrate_extrusion_factor(self, gcmd, tool_idx):
         repeats = gcmd.get_int('REPEATS', 1)
-        calibrate_move_distance = min(self.all_variables['calibrated_selector_to_extruder_length'] * 0.66, 200)
+        calibrate_move_distance = min(self.all_variables['calibrated_extruder_to_selector_length'] * 0.66, 200)
 
         self.ercf_move_selector_to_tool(gcmd, tool_idx)
 
@@ -1014,7 +1014,7 @@ class ERCF(object):
         gcmd.respond_info('Tool {} extrusion factor: {}'.format(tool_idx, extrusion_factor))
 
         # Apply
-        self.all_variables['calibrated_tool_extrusion_factor'][tool_idx] = extrusion_factor
+        self.all_variables['calibrated_extruder_to_selector_length'][tool_idx] = extrusion_factor
         self.save_variables()
 
     def calibrate_component_length(self, gcmd):
