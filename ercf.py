@@ -840,16 +840,17 @@ class ERCF(object):
 
         # Unset the selector
         self._current_tool = None
+        self.ercf_move_selector_to_tool(gcmd, tool_idx=0, force=True)
 
         gcmd.respond_info('Selector homed')
 
-    def ercf_move_selector_to_tool(self, gcmd, tool_idx):
+    def ercf_move_selector_to_tool(self, gcmd, tool_idx, force=False):
         color_selector_positions = self.all_variables['color_selector_positions']
         if tool_idx >= len(color_selector_positions):
             raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
 
         if self._current_tool != tool_idx:
-            if self._current_tool is None:
+            if self._current_tool is None and not force:
                 raise self.printer.command_error('Selector must be homed before switching to the next tool')
 
             # Check the filament status
