@@ -143,6 +143,9 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_CALIBRATE_GEAR_STEPPER_ROTATION_DISTANCE',
                                     self.calibrate_gear_stepper_rotation_distance,
                                     desc='Calibrate the rotation distance')
+        self.gcode.register_command('_ERCF_CALIBRATE_SELECTOR_LOCATION',
+                                    self.cmd_ERCF_CALIBRATE_SELECTOR_LOCATION,
+                                    desc='Locate the selector')
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
@@ -157,16 +160,7 @@ class ERCF(object):
 
         # Initialize state machine status
         self._servo_status = None
-        self._is_selector_homed = False
-
-    @property
-    def _current_tool(self):
-        return self.all_variables.get('_current_tool', None)
-
-    @_current_tool.setter
-    def _current_tool(self, tool_idx):
-        self.all_variables['_current_tool'] = tool_idx
-        self.save_variables()
+        self._current_tool = None
 
     def load_variables(self):
         allvars = {}
@@ -224,6 +218,10 @@ class ERCF(object):
     def cmd_ERCF_CHANGE_TOOL(self, gcmd):
         tool_idx = gcmd.get_int('TOOL')
         self.ercf_change_tool(gcmd, tool_idx)
+
+    def cmd_ERCF_CALIBRATE_SELECTOR_LOCATION(self, gcmd):
+        tool_idx = gcmd.get_int('TOOL')
+        self.calibrate_selector_location(gcmd, tool_idx)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -835,7 +833,6 @@ class ERCF(object):
 
         # Unset the selector
         self._current_tool = None
-        self._is_selector_homed = True
 
         gcmd.respond_info('Selector homed')
 
@@ -845,7 +842,7 @@ class ERCF(object):
             raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
 
         if self._current_tool != tool_idx:
-            if not self._is_selector_homed:
+            if self._current_tool is None:
                 raise self.printer.command_error('Selector must be homed before switching to the next tool')
 
             # Check the filament status
@@ -871,6 +868,35 @@ class ERCF(object):
 
     def set_gear_stepper_rotation_distance(self, new_rotation_distance):
         self.gear_stepper.steppers[0].set_rotation_distance(new_rotation_distance)
+
+    def calibrate_selector_location(self, gcmd, tool_idx):
+        color_selector_positions = self.all_variables['color_selector_positions']
+
+        if tool_idx >= len(color_selector_positions):
+            raise self.printer.command_error('Invalid tool index: {}'.format(tool_idx))
+
+        # Move the block + 1 length
+        homing_move_distance = 20 + (tool_idx + 1) * 21 + ((tool_idx + 1) / 3.0) * 5
+
+        self.selector_stepper.do_set_position(0)
+
+        # Do the homing move
+        self.selector_stepper.do_homing_move(movepos=-homing_move_distance,
+                                             speed=50,
+                                             accel=self.short_moves_accel,
+                                             triggered=True,
+                                             check_trigger=True)
+
+        traveled_distance = abs(self.selector_stepper.get_position())
+
+        gcmd.respond_info('Tool {} location: {}'.format(tool_idx, traveled_distance))
+
+        self.all_variables['color_selector_positions'][tool_idx] = traveled_distance
+
+        self.save_variables()
+
+        # This is critical. The locate action is going to throw the homing invalid.
+        self._current_tool = None
 
     def calibrate_encoder_resolution(self, gcmd):
         calibrate_move_distance = gcmd.get_float('DISTANCE', 500)
