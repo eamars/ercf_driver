@@ -739,16 +739,18 @@ class ERCF(object):
             target_distance = max(0, self.all_variables['calibrated_extruder_to_selector_length'] - actual_distance) + self.long_move_distance
             actual_distance = self.stepper_move_wait(gcmd,
                                                      target_move_distance=target_distance,
+                                                     step_distance=target_distance,
+                                                     step_speed=self.short_moves_speed,
+                                                     step_accel=self.short_moves_accel,
                                                      stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                      stepper_init_callback=self._toolhead_move_init,
-                                                     step_distance=target_distance,
                                                      raise_on_filament_slip=True)
             accumulated_step_distance += actual_distance
 
             # Release the gear stepper and move to next
             self.servo_up()
 
-        # Move together with the extruder with a single long move
+        # Move the toolhead single long move approaching the sensor
         target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) - self.long_move_distance
         actual_distance = self.toolhead_move_wait(gcmd,
                                                   target_move_distance=target_distance,
@@ -757,8 +759,6 @@ class ERCF(object):
                                                   stop_condition_callback=self._stop_on_filament_present,
                                                   raise_on_filament_slip=True)
         accumulated_step_distance += actual_distance
-
-
 
         # Since we are closed to the toolhead sensor, we want do move slowly
         target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) + self.long_move_distance
