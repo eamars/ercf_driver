@@ -887,7 +887,7 @@ class ERCF(object):
                                              triggered=True,
                                              check_trigger=True)
 
-        traveled_distance = abs(self.selector_stepper.get_position())
+        traveled_distance = abs(self.selector_stepper.get_position()[0])
 
         gcmd.respond_info('Tool {} location: {}'.format(tool_idx, traveled_distance))
 
