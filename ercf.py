@@ -388,8 +388,8 @@ class ERCF(object):
         self.motion_counter.reset_counts()
 
         accumulated_move_distance = 0
-        gcmd.respond_info('Requested stepper move distance: {} with step length: {}, accel: '.format(target_move_distance,
-                                                                                                     step_distance, step_accel))
+        gcmd.respond_info('Requested stepper move distance: {} with step length: {}, accel: {}'.format(
+            target_move_distance, step_distance, step_accel))
 
         try:
             prev_state = initial_condition_callback()
@@ -513,6 +513,9 @@ class ERCF(object):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
 
+        if self.toolhead_sensor.runout_helper.filament_present:
+            self.ercf_unload_to_toolhead_sensor(gcmd)
+
         # Extrude until the toolhead sensor (should be relative short)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
         accumulated_move_distance = self.toolhead_move_wait(gcmd,
@@ -522,6 +525,7 @@ class ERCF(object):
                                                             initial_condition_callback=self._stop_on_filament_present,
                                                             stop_condition_callback=self._stop_on_filament_present,
                                                             expect_partial_move=True)
+
 
         # Extrude to the toolhead (without feedback)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
