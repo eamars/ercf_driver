@@ -513,9 +513,6 @@ class ERCF(object):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
 
-        # if self.toolhead_sensor.runout_helper.filament_present:
-        #     self.ercf_unload_to_toolhead_sensor(gcmd)
-
         # Extrude until the toolhead sensor (should be relative short)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
         accumulated_move_distance = self.toolhead_move_wait(gcmd,
@@ -531,7 +528,7 @@ class ERCF(object):
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
         accumulated_move_distance += self.toolhead_move_wait(gcmd,
                                                              target_move_distance=nozzle_to_sensor_length,
-                                                             step_distance=self.minimum_step_distance,
+                                                             step_distance=nozzle_to_sensor_length,
                                                              step_speed=self.short_moves_speed,
                                                              raise_on_filament_slip=False)
 
@@ -823,7 +820,7 @@ class ERCF(object):
         target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) + self.long_move_distance
         accumulated_step_distance += self.toolhead_move_wait(gcmd,
                                                              target_move_distance=target_distance,
-                                                             step_distance=min(10, self.short_move_distance),
+                                                             step_distance=self.minimum_step_distance,
                                                              step_speed=self.short_moves_speed,
                                                              raise_on_filament_slip=True,
                                                              stop_condition_callback=self._stop_on_filament_present)
