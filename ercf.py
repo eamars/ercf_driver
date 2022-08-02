@@ -388,7 +388,8 @@ class ERCF(object):
         self.motion_counter.reset_counts()
 
         accumulated_move_distance = 0
-        gcmd.respond_info('Requested stepper move distance: {}'.format(target_move_distance))
+        gcmd.respond_info('Requested stepper move distance: {} with step length: {}, accel: '.format(target_move_distance,
+                                                                                                     step_distance, step_accel))
 
         try:
             prev_state = initial_condition_callback()
