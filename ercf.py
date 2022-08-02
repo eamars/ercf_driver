@@ -10,6 +10,16 @@ from itertools import product
 from numpy import median
 
 
+class StopConditionException(Exception):
+    pass
+
+class FilamentSlipException(StopConditionException):
+    pass
+
+class FatalPrinterError(Exception):
+    pass
+
+
 class EncoderCounter:
 
     def __init__(self, printer, pin, sample_time, poll_time, encoder_steps):
@@ -46,14 +56,9 @@ class EncoderCounter:
         self._counts = 0.
 
 
-class StopConditionException(Exception):
-    pass
-
-class FilamentSlipException(StopConditionException):
-    pass
-
-
 class ERCF(object):
+    MACRO_PAUSE = 'ERCF_PAUSE'
+
     def __init__(self, config):
         self.config = config
         self.printer = config.get_printer()
@@ -135,13 +140,13 @@ class ERCF(object):
 
         # Calibration
         self.gcode.register_command('_ERCF_CALIBRATE_ENCODER_RESOLUTION',
-                                    self.calibrate_encoder_resolution,
+                                    self.cmd_CALIBRATE_ENCODER_RESOLUTION,
                                     desc='Calibrate the resolution of the encoder')
         self.gcode.register_command('_ERCF_CALIBRATE_COMPONENT_LENGTH',
                                     self.cmd_ERCF_CALIBRATE_COMPONENT_LENGTH,
                                     desc='Execute the calibration routine on the current tool')
         self.gcode.register_command('_ERCF_CALIBRATE_GEAR_STEPPER_ROTATION_DISTANCE',
-                                    self.calibrate_gear_stepper_rotation_distance,
+                                    self.cmd_CALIBRATE_GEAR_STEPPER_ROTATION_DISTANCE,
                                     desc='Calibrate the rotation distance')
         self.gcode.register_command('_ERCF_CALIBRATE_SELECTOR_LOCATION',
                                     self.cmd_ERCF_CALIBRATE_SELECTOR_LOCATION,
@@ -195,42 +200,85 @@ class ERCF(object):
             logging.exception(msg)
             raise self.printer.command_error(msg)
 
+    @contextmanager
+    def _gear_stepper_move_guard(self, lift_servo=True):
+        try:
+            yield
+        finally:
+            if lift_servo:
+                self.servo_up()
+
+    @contextmanager
+    def _command_exception_handler(self, gcmd):
+        try:
+            yield
+        except FatalPrinterError as e:
+            idle_timeout = self.printer.lookup_object('idle_timeout')
+            if idle_timeout is None:
+                raise self.printer.config_error("No idle timeout found")
+
+            status = idle_timeout.get_status()
+            if status['state'] == 'Printing':
+                gcmd.respond_info('Caught exception: {}, Calling {}'.format(e, self.MACRO_PAUSE))
+                self.gcode.run_script_from_command(self.MACRO_PAUSE)
+            else:
+                raise self.printer.command_error(e)
+
     def cmd_ERCF_SERVO_UP(self, gcmd):
-        self.servo_up()
+        with self._command_exception_handler(gcmd):
+            self.servo_up()
 
     def cmd_ERCF_SERVO_DOWN(self, gcmd):
-        self.servo_down()
+        with self._command_exception_handler(gcmd):
+            self.servo_down()
 
     def cmd_ERCF_CALIBRATE_COMPONENT_LENGTH(self, gcmd):
-        self.calibrate_component_length(gcmd)
+        with self._command_exception_handler(gcmd):
+            self.calibrate_component_length(gcmd)
 
     def cmd_ERCF_LOAD(self, gcmd):
-        self.ercf_load_from_unknown_location(gcmd)
+        with self._command_exception_handler(gcmd):
+            self.ercf_load_from_unknown_location(gcmd)
 
     def cmd_ERCF_LOAD_FRESH(self, gcmd):
-        self.ercf_load_fresh(gcmd)
+        with self._command_exception_handler(gcmd):
+            self.ercf_load_fresh(gcmd)
 
     def cmd_ERCF_UNLOAD(self, gcmd):
-        self.ercf_unload(gcmd)
+        with self._command_exception_handler(gcmd):
+            self.ercf_unload(gcmd)
 
     def cmd_ERCF_HOME_SELECTOR(self, gcmd):
-        self.ercf_home_selector(gcmd)
+        with self._command_exception_handler(gcmd):
+            self.ercf_home_selector(gcmd)
 
     def cmd_ERCF_MOVE_SELECTOR_TO_TOOL(self, gcmd):
-        tool_idx = gcmd.get_int('TOOL')
-        self.ercf_move_selector_to_tool(gcmd, tool_idx)
+        with self._command_exception_handler(gcmd):
+            tool_idx = gcmd.get_int('TOOL')
+            self.ercf_move_selector_to_tool(gcmd, tool_idx)
 
     def cmd_ERCF_CHANGE_TOOL(self, gcmd):
-        tool_idx = gcmd.get_int('TOOL')
-        self.ercf_change_tool(gcmd, tool_idx)
+        with self._command_exception_handler(gcmd):
+            tool_idx = gcmd.get_int('TOOL')
+            self.ercf_change_tool(gcmd, tool_idx)
 
     def cmd_ERCF_CALIBRATE_SELECTOR_LOCATION(self, gcmd):
-        tool_idx = gcmd.get_int('TOOL')
-        self.calibrate_selector_location(gcmd, tool_idx)
+        with self._command_exception_handler(gcmd):
+            tool_idx = gcmd.get_int('TOOL')
+            self.calibrate_selector_location(gcmd, tool_idx)
 
     def cmd_ERCF_CALIBRATE_EXTRUSION_FACTOR(self, gcmd):
-        tool_idx = gcmd.get_int('TOOL')
-        self.calibrate_extrusion_factor(gcmd, tool_idx)
+        with self._command_exception_handler(gcmd):
+            tool_idx = gcmd.get_int('TOOL')
+            self.calibrate_extrusion_factor(gcmd, tool_idx)
+
+    def cmd_CALIBRATE_GEAR_STEPPER_ROTATION_DISTANCE(self, gcmd):
+        with self._command_exception_handler(gcmd):
+            self.calibrate_gear_stepper_rotation_distance(gcmd)
+
+    def cmd_CALIBRATE_ENCODER_RESOLUTION(self, gcmd):
+        with self._command_exception_handler(gcmd):
+            self.calibrate_encoder_resolution(gcmd)
 
     def servo_up(self):
         if self._servo_status != 'up':
@@ -436,14 +484,6 @@ class ERCF(object):
             raise StopConditionException
         return prev_condition
 
-    @contextmanager
-    def _gear_stepper_move_guard(self, lift_servo=True):
-        try:
-            yield
-        finally:
-            if lift_servo:
-                self.servo_up()
-
     def ercf_unload_to_toolhead_sensor(self, gcmd):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
@@ -474,13 +514,20 @@ class ERCF(object):
 
         # Extrude until the toolhead sensor (should be relative short)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
-        accumulated_move_distance = self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance,
+        accumulated_move_distance = self.toolhead_move_wait(gcmd,
+                                                            target_move_distance=nozzle_to_sensor_length,
+                                                            step_distance=self.minimum_step_distance,
+                                                            step_speed=self.short_moves_speed,
                                                             initial_condition_callback=self._stop_on_filament_present,
-                                                            stop_condition_callback=self._stop_on_filament_present,)
+                                                            stop_condition_callback=self._stop_on_filament_present,
+                                                            expect_partial_move=True)
 
         # Extrude to the toolhead (without feedback)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
-        accumulated_move_distance += self.toolhead_move_wait(gcmd, nozzle_to_sensor_length, self.short_move_distance,
+        accumulated_move_distance += self.toolhead_move_wait(gcmd,
+                                                             target_move_distance=nozzle_to_sensor_length,
+                                                             step_distance=self.minimum_step_distance,
+                                                             step_speed=self.short_moves_speed,
                                                              raise_on_filament_slip=False)
 
         gcmd.respond_info('The filament is loaded to the nozzle. The total move distance: {}'.format(accumulated_move_distance))
