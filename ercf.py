@@ -513,8 +513,8 @@ class ERCF(object):
         if not self.toolhead_sensor:
             raise self.printer.command_error('Filament sensor is not defined')
 
-        if self.toolhead_sensor.runout_helper.filament_present:
-            self.ercf_unload_to_toolhead_sensor(gcmd)
+        # if self.toolhead_sensor.runout_helper.filament_present:
+        #     self.ercf_unload_to_toolhead_sensor(gcmd)
 
         # Extrude until the toolhead sensor (should be relative short)
         nozzle_to_sensor_length = self.all_variables.get('calibrated_nozzle_to_sensor_length')
