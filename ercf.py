@@ -99,7 +99,8 @@ class ERCF(object):
         self.extra_servo_dwell_down = config.getfloat('extra_servo_dwell_down', 0)
 
         # Others
-        self.selector_filament_engagement_retry = config.getfloat('selector_filament_engagement_retry', 2)
+        self.selector_filament_engagement_retry = config.getint('selector_filament_engagement_retry', 2)
+        self.auto_home_selector = config.getboolean('auto_home_selector', True)
 
         self.variable_path = config.get('variable_path')
         self.all_variables = {}
@@ -204,7 +205,7 @@ class ERCF(object):
             logging.exception(msg)
             raise self.printer.command_error(msg)
 
-    def _on_motor_off(self, print_time):
+    def _on_motor_off(self, print_time=None):
         # Unset the current tool location when all motors are off
         self._current_tool = None
 
@@ -874,6 +875,8 @@ class ERCF(object):
         # Check the filament status
         if self.is_filament_in_selector():
             gcmd.respond_info('Filament is still in the selector card. Will do the unload')
+
+            # There is chance this will fail as the filament already retracted in the block but require 1-3mm retraction
             self.ercf_unload(gcmd)
 
         # TODO: Implement the sensorless homing
@@ -910,7 +913,10 @@ class ERCF(object):
 
         if self._current_tool != tool_idx:
             if not force and self._current_tool is None:
-                raise self.printer.command_error('Selector must be homed before switching to the next tool')
+                if self.auto_home_selector:
+                    self.ercf_home_selector(gcmd)
+                else:
+                    raise self.printer.command_error('Selector must be homed before switching to the next tool')
 
             # Check the filament status
             if not force and self.is_filament_in_selector():
