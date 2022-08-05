@@ -1126,18 +1126,24 @@ class ERCF(object):
 
         # Remove slack for filament in the bowden tube so the tiny toolhead movement can be detected
         gcmd.respond_info('Remove slack by pushing in tiny steps. Will stop on filament slip')
-        with self._gear_stepper_move_guard():
-            self.servo_down()
-            actual_distance = self.gear_stepper_move_wait(gcmd,
-                                                          target_move_distance=20,
-                                                          step_distance=1,
-                                                          step_speed=self.short_moves_speed,
-                                                          step_accel=self.short_moves_accel,
-                                                          raise_on_filament_slip=False)
-            gcmd.respond_info(
-                'There is about {}mm slack in the feeding system. This number will not be recorded'.format(
-                    actual_distance))
-            self.servo_up()
+
+        original_minimum_step_distance = self.minimum_step_distance
+        self.minimum_step_distance = 1  # Temporarily override the minimum step distance
+        try:
+            with self._gear_stepper_move_guard():
+                self.servo_down()
+                actual_distance = self.gear_stepper_move_wait(gcmd,
+                                                              target_move_distance=20,
+                                                              step_distance=1,
+                                                              step_speed=self.short_moves_speed,
+                                                              step_accel=self.short_moves_accel,
+                                                              raise_on_filament_slip=False)
+                gcmd.respond_info(
+                    'There is about {}mm slack in the feeding system. This number will not be recorded'.format(
+                        actual_distance))
+                self.servo_up()
+        finally:
+            self.minimum_step_distance = original_minimum_step_distance
 
         # Variables to dump to Vars
         nozzle_to_sensor_length = None
