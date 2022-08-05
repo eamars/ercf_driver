@@ -820,9 +820,13 @@ class ERCF(object):
         # Move the toolhead single long move approaching the sensor
         gcmd.respond_info('Feeding from the extruder to just before the sensor -- long single move with just the extruder, stop on filament sensor trigger')
         target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance - self.long_move_distance)
+        if target_distance < self.long_move_distance:
+            step_distance = self.short_move_distance
+        else:
+            step_distance = target_distance
         actual_distance = self.toolhead_move_wait(gcmd,
                                                   target_move_distance=target_distance,
-                                                  step_distance=target_distance,
+                                                  step_distance=step_distance,
                                                   initial_condition_callback=self._toolhead_move_init,
                                                   stop_condition_callback=self._stop_on_filament_present,
                                                   raise_on_filament_slip=True)
@@ -836,6 +840,7 @@ class ERCF(object):
                                                              step_distance=self.minimum_step_distance,
                                                              step_speed=self.short_moves_speed,
                                                              raise_on_filament_slip=True,
+                                                             initial_condition_callback=self._toolhead_move_init,
                                                              stop_condition_callback=self._stop_on_filament_present)
 
         # we are on the filament sensor, move the final distance
