@@ -91,6 +91,8 @@ class ERCF(object):
         self.long_move_distance = config.getfloat('long_move_distance', 30)
         self.short_move_distance = config.getfloat('short_move_distance', 10)
         self.minimum_step_distance = config.getfloat('minimum_step_distance', 5)
+        self.maximum_move_distance = config.getfloat('maximum_move_distance', 1500)
+        self.maximum_step_distance = config.getfloat('maximum_step_distance', 1500)
         self.calibrate_move_distance_per_step = config.getfloat('calibrate_move_distance_per_step', 3)
 
         self.servo_up_angle = config.getfloat('servo_up_angle')
@@ -101,6 +103,7 @@ class ERCF(object):
         # Others
         self.selector_filament_engagement_retry = config.getint('selector_filament_engagement_retry', 2)
         self.auto_home_selector = config.getboolean('auto_home_selector', True)
+        self.tip_forming_gcode_before_calibration = config.get('tip_forming_gcode_before_calibration', None)
 
         self.variable_path = config.get('variable_path')
         self.all_variables = {}
@@ -1110,16 +1113,31 @@ class ERCF(object):
         gcmd.respond_info('Going to calibrate the length of each component by unloading the '
                           'filament from nozzle to the ERCF selector')
 
-        self.servo_up()
+        # Optionally, run the tip forming gcode prior to the calibration
+        if self.tip_forming_gcode_before_calibration:
+            self.gcode.run_script_from_command(self.tip_forming_gcode_before_calibration)
 
         # Sanity check: the toolhead sensor should trigger
         if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
-            raise self.printer.command_error('Filament is not loaded to the toolhead, or the filament sensor is not triggering')
+            raise self.printer.command_error(
+                'Filament is not loaded to the toolhead, or the filament sensor is not triggering')
         elif self.toolhead_sensor is None:
             gcmd.respond_info('Going to run the toolhead sensorless calibration')
 
-        # Form the tip to begin with
-        # self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
+        # Remove slack for filament in the bowden tube so the tiny toolhead movement can be detected
+        gcmd.respond_info('Remove slack by pushing in tiny steps. Will stop on filament slip')
+        with self._gear_stepper_move_guard():
+            self.servo_down()
+            actual_distance = self.gear_stepper_move_wait(gcmd,
+                                                          target_move_distance=20,
+                                                          step_distance=1,
+                                                          step_speed=self.short_moves_speed,
+                                                          step_accel=self.short_moves_accel,
+                                                          raise_on_filament_slip=False)
+            gcmd.respond_info(
+                'There is about {}mm slack in the feeding system. This number will not be recorded'.format(
+                    actual_distance))
+            self.servo_up()
 
         # Variables to dump to Vars
         nozzle_to_sensor_length = None
