@@ -791,8 +791,9 @@ class ERCF(object):
                     'Filament is not engaged inside the selector. Please insert the filament manually')
 
             # Do a single move to feed the filament to the extruder
+            gcmd.respond_info('Feeding from selector to just before the extruder -- long single move with just gear stepper')
             accumulated_step_distance = test_move_distance
-            target_distance = self.all_variables['calibrated_extruder_to_selector_length'] - test_move_distance - self.long_move_distance
+            target_distance = max(0, self.all_variables['calibrated_extruder_to_selector_length'] - test_move_distance - self.long_move_distance)
             actual_distance = self.gear_stepper_move_wait(gcmd,
                                                           target_move_distance=target_distance,
                                                           step_distance=target_distance,
@@ -801,6 +802,7 @@ class ERCF(object):
             accumulated_step_distance += actual_distance
 
             # Feed to the extruder
+            gcmd.respond_info('Feeding to the extruder -- short pulse move using both extruders and stop on filament slip')
             target_distance = max(0, self.all_variables['calibrated_extruder_to_selector_length'] - actual_distance) + self.long_move_distance
             actual_distance = self.stepper_move_wait(gcmd,
                                                      target_move_distance=target_distance,
@@ -816,7 +818,8 @@ class ERCF(object):
             self.servo_up()
 
         # Move the toolhead single long move approaching the sensor
-        target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) - self.long_move_distance
+        gcmd.respond_info('Feeding from the extruder to just before the sensor -- long single move with just the extruder, stop on filament sensor trigger')
+        target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance - self.long_move_distance)
         actual_distance = self.toolhead_move_wait(gcmd,
                                                   target_move_distance=target_distance,
                                                   step_distance=target_distance,
@@ -826,6 +829,7 @@ class ERCF(object):
         accumulated_step_distance += actual_distance
 
         # Since we are closed to the toolhead sensor, we want do move slowly
+        gcmd.respond_info('Feeding to the sensor -- short pulse move and stop on filament sensor trigger')
         target_distance = max(0, self.all_variables['calibrated_sensor_to_extruder_length'] - actual_distance) + self.long_move_distance
         accumulated_step_distance += self.toolhead_move_wait(gcmd,
                                                              target_move_distance=target_distance,
