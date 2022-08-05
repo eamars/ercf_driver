@@ -104,6 +104,7 @@ class ERCF(object):
         self.selector_filament_engagement_retry = config.getint('selector_filament_engagement_retry', 2)
         self.auto_home_selector = config.getboolean('auto_home_selector', True)
         self.tip_forming_gcode_before_calibration = config.get('tip_forming_gcode_before_calibration', None)
+        self.slip_detection_ratio_threshold = config.getint('slip_detection_ratio_threshold', 3)  # If the actual distance is less than 1/3 then it is considered as slip
 
         self.variable_path = config.get('variable_path')
         self.all_variables = {}
@@ -432,7 +433,7 @@ class ERCF(object):
                 accumulated_move_distance += filament_move_distance
                 remain_distance = abs(target_move_distance) - accumulated_move_distance
 
-                if filament_move_distance < step_distance / 3.0:
+                if filament_move_distance < (step_distance / self.slip_detection_ratio_threshold):
                     msg = 'Filament is not moving. Requested: {}, filament measured move: {}'.format(step_distance, filament_move_distance)
                     raise FilamentSlipException(msg)
 
@@ -1129,6 +1130,8 @@ class ERCF(object):
 
         original_minimum_step_distance = self.minimum_step_distance
         self.minimum_step_distance = 1  # Temporarily override the minimum step distance
+        original_slip_detection_ratio_threshold = self.slip_detection_ratio_threshold
+        self.slip_detection_ratio_threshold = 1.5  # If move less than 2/3 then consider it slip
         try:
             with self._gear_stepper_move_guard():
                 self.servo_down()
@@ -1144,6 +1147,7 @@ class ERCF(object):
                 self.servo_up()
         finally:
             self.minimum_step_distance = original_minimum_step_distance
+            self.slip_detection_ratio_threshold = original_slip_detection_ratio_threshold
 
         # Variables to dump to Vars
         nozzle_to_sensor_length = None
