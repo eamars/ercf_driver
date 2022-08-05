@@ -137,6 +137,9 @@ class ERCF(object):
         self.gcode.register_command('_ERCF_CHANGE_TOOL',
                                     self.cmd_ERCF_CHANGE_TOOL,
                                     desc='Tool change gcode')
+        self.gcode.register_command('_ERCF_MOTORS_OFF',
+                                    self.ercf_motors_off,
+                                    desc='Turn off both the gear and selector stepper')
 
         # Calibration
         self.gcode.register_command('_ERCF_CALIBRATE_ENCODER_RESOLUTION',
@@ -157,6 +160,7 @@ class ERCF(object):
 
         # Register event
         self.printer.register_event_handler('klippy:connect', self.handle_connect)
+        self.printer.register_event_handler('stepper_enable:motor_off', self._on_motor_off)
 
     def handle_connect(self):
         self.toolhead = self.printer.lookup_object('toolhead')
@@ -199,6 +203,10 @@ class ERCF(object):
             msg = "Unable to write to config file"
             logging.exception(msg)
             raise self.printer.command_error(msg)
+
+    def _on_motor_off(self, print_time):
+        # Unset the current tool location when all motors are off
+        self._current_tool = None
 
     @contextmanager
     def _gear_stepper_move_guard(self, lift_servo=True):
@@ -934,6 +942,11 @@ class ERCF(object):
 
         # Load to the toolhead
         self.ercf_load_fresh(gcmd)
+
+    def ercf_motors_off(self, gcmd):
+        self.gear_stepper.do_enable(False)
+        self.selector_stepper.do_enable(False)
+        self._on_motor_off()
 
     def calibrate_selector_location(self, gcmd, tool_idx):
         color_selector_positions = self.all_variables['color_selector_positions']
