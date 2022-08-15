@@ -209,6 +209,9 @@ class ERCF(object):
             logging.exception(msg)
             raise self.printer.command_error(msg)
 
+    def get_status(self, eventtime):
+        return {'current_tool': self._current_tool}
+
     def _on_motor_off(self, print_time=None):
         # Unset the current tool location when all motors are off
         self._current_tool = None
