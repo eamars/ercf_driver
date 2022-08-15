@@ -1355,7 +1355,3 @@ class ERCF(object):
 
 def load_config(config):
     return ERCF(config)
-
-
-def load_config_prefix(config):
-    return ERCF(config)
