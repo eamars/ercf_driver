@@ -63,6 +63,9 @@ class ERCF(object):
         self.config = config
         self.printer = config.get_printer()
 
+        # Register current module
+        self.printer.add_object("ercf", self)
+
         # Read config
         self.gear_stepper = None
         self.gear_stepper_name = config.get('gear_stepper')
