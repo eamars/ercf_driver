@@ -233,7 +233,7 @@ class ERCF(object):
             status = idle_timeout.get_status()
             if status['state'] == 'Printing':
                 gcmd.respond_info('Caught exception: {}, Calling {}'.format(e, self.MACRO_PAUSE))
-                self.gcode.run_script(self.MACRO_PAUSE)
+                self.gcode.run_script_from_command(self.MACRO_PAUSE)
             else:
                 raise self.printer.command_error(e)
 
@@ -297,11 +297,11 @@ class ERCF(object):
         if self._servo_status != 'up':
             self._servo_status = 'up'
             servo_name = self.servo_name.split()[1]
-            self.gcode.run_script('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                     self.servo_up_angle))
             self.toolhead.wait_moves()
             time.sleep(0.25 + self.extra_servo_dwell_up)
-            self.gcode.run_script('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
             self.toolhead.wait_moves()
 
     def servo_down(self):
@@ -313,7 +313,7 @@ class ERCF(object):
             self.gear_stepper.do_set_position(0)
             self.gear_stepper.do_move(0.5, speed=25, accel=self.gear_stepper_accel)
 
-            self.gcode.run_script('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                     self.servo_down_angle))
             self.toolhead.wait_moves()
             time.sleep(0.2)
@@ -324,7 +324,7 @@ class ERCF(object):
             time.sleep(0.1 + self.extra_servo_dwell_down)
             self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
             self.toolhead.wait_moves()
-            self.gcode.run_script('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
+            self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
             self.toolhead.wait_moves()
 
@@ -467,7 +467,7 @@ class ERCF(object):
         return toolhead_position
 
     def _toolhead_move_init(self):
-        self.gcode.run_script('G92 E0')
+        self.gcode.run_script_from_command('G92 E0')
         toolhead_position = self.toolhead.get_position()
 
         return toolhead_position
@@ -622,7 +622,7 @@ class ERCF(object):
         accumulated_move_distance = 0
         if self.toolhead_sensor.runout_helper.filament_present:
             # TODO: Make it a function instead of running as the macro
-            self.gcode.run_script('_ERCF_FORM_TIP_STANDALONE')
+            self.gcode.run_script_from_command('_ERCF_FORM_TIP_STANDALONE')
 
             gcmd.respond_info('Unloading from nozzle to toolhead sensor')
             self.ercf_unload_to_toolhead_sensor(gcmd)
@@ -1116,7 +1116,7 @@ class ERCF(object):
 
         # Optionally, run the tip forming gcode prior to the calibration
         if self.tip_forming_gcode_before_calibration:
-            self.gcode.run_script(self.tip_forming_gcode_before_calibration)
+            self.gcode.run_script_from_command(self.tip_forming_gcode_before_calibration)
 
         # Sanity check: the toolhead sensor should trigger
         if self.toolhead_sensor and not bool(self.toolhead_sensor.runout_helper.filament_present):
@@ -1169,7 +1169,7 @@ class ERCF(object):
         #   - nozzle_to_extruder_length: IF the filament move passes the extruder (sensorless or the sensor is installed
         #       before the extruder).
         stage_1_move_distance = 0
-        self.gcode.run_script('G92 E0')
+        self.gcode.run_script_from_command('G92 E0')
         toolhead_position = self.toolhead.get_position()
 
         while True:
@@ -1219,7 +1219,7 @@ class ERCF(object):
         #   - sensor_to_extruder_length
         if nozzle_to_sensor_length is not None:
             stage_2_move_distance = 0
-            self.gcode.run_script('G92 E0')
+            self.gcode.run_script_from_command('G92 E0')
             toolhead_position = self.toolhead.get_position()
             while True:
                 toolhead_position[3] -= self.calibrate_move_distance_per_step
@@ -1346,7 +1346,7 @@ class ERCF(object):
         self.all_variables['calibrated_extruder_to_selector_length'] = extruder_to_selector_length
 
         self.save_variables()
-        self.gcode.run_script('G92 E0')
+        self.gcode.run_script_from_command('G92 E0')
         self.servo_up()
 
 
