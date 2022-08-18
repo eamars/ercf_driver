@@ -775,6 +775,12 @@ class ERCF(object):
         if self.toolhead_sensor.runout_helper.filament_present:
             raise self.printer.command_error('Call ercf_load_from_unknown_location instead')
 
+        # Check if the filament is already loaded somehow. If the filament is already partially loaded then run the
+        # load from unknown location script.
+        if self.is_filament_in_selector():
+            self.ercf_load_from_unknown_location(gcmd)
+            return
+
         accumulated_step_distance = 0
         with self._gear_stepper_move_guard():
             # Check gear engagement
