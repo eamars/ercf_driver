@@ -601,7 +601,7 @@ class ERCF(object):
             accumulated_move_distance += actual_move_distance
 
             # Pull back a little
-            target_move_distance = 5
+            target_move_distance = 7
             actual_move_distance = self.gear_stepper_move_wait(gcmd,
                                                                target_move_distance=-target_move_distance,
                                                                step_distance=self.short_move_distance,
@@ -776,10 +776,9 @@ class ERCF(object):
             raise self.printer.command_error('Call ercf_load_from_unknown_location instead')
 
         # Check if the filament is already loaded somehow. If the filament is already partially loaded then run the
-        # load from unknown location script.
+        # unload to start from clean state
         if self.is_filament_in_selector():
-            self.ercf_load_from_unknown_location(gcmd)
-            return
+            self.ercf_unload()
 
         accumulated_step_distance = 0
         with self._gear_stepper_move_guard():
