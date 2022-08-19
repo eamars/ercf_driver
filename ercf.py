@@ -622,6 +622,9 @@ class ERCF(object):
         if nozzle_to_sensor_length is None:
             raise self.printer.command_error('Sensor before extruder setup is currently not supported')
 
+        # Lift the servo before attempting to move the toolhead
+        self.servo_up()
+
         accumulated_move_distance = 0
         if self.toolhead_sensor.runout_helper.filament_present:
             # TODO: Make it a function instead of running as the macro
@@ -778,7 +781,7 @@ class ERCF(object):
         # Check if the filament is already loaded somehow. If the filament is already partially loaded then run the
         # unload to start from clean state
         if self.is_filament_in_selector():
-            self.ercf_unload()
+            self.ercf_unload(gcmd)
 
         accumulated_step_distance = 0
         with self._gear_stepper_move_guard():
