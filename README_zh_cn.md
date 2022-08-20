@@ -72,7 +72,7 @@ slip_detection_ratio_threshold: 3                          # 耗材打滑比例 
 校准产生的数据将自动保存在 [variable_path] 指定的文件内。以下为各个项目的定义
 - `calibrated_encoder_resolution`: 编码器分辨率（用于试剂耗材运动距离运算）
 - `calibrated_extruder_to_selector_length`: 挤出机到选择器距离。对于双（或多）挤出机配置中该挤出机为距离ERCF最近的一个。
-- `calibrated_nozzle_to_extruder_length`: 目前并未使用）喷嘴到挤出机距离。该项目适用于断料检测器安装在挤出机上方的配置（比如Orbiter2的断料检测）
+- `calibrated_nozzle_to_extruder_length`:（目前并未使用）喷嘴到挤出机距离。该项目适用于断料检测器安装在挤出机上方的配置（比如Orbiter2的断料检测）
 - `calibrated_nozzle_to_sensor_length`: 喷嘴到断料检测器的距离
 - `calibrated_sensor_to_extruder_length`: 断料检测到挤出机的距离。对于双（或多）挤出机配置中该挤出机为距离ERCF最近的一个。
 - `calibrated_tool_extrusion_factor`: 耗材挤出系数
