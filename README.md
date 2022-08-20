@@ -5,6 +5,21 @@ Alternative ERCF Driver Implementation - A Python implementation based on Klippe
 The goal of the alternative ERCF implementation is to overcome drawbacks from the current ERCF driver, as well as adding several cool features. 
 The goal is to re-implement all feature that is provided by the ERCF driver in pure Python, with additional checks preventing load failures and jamming caused by failure to eject. 
 
+# Install via Moonraker
+Clone the repository to the home directory
+
+    cd ~
+    git clone git@github.com:eamars/ercf_driver.git
+  
+Then copy the below block into the moonraker.conf
+
+    [update_manager client ercf_driver]
+    type: git_repo
+    path: ~/ercf_driver
+    origin: git@github.com:eamars/ercf_driver.git
+    install_script: install.sh
+    managed_services: klipper
+
 # GCode Macros
 ## Tool Changes
 - `T1-T9`: Move the selector to the corresponding filament block then load the filament to the nozzle. 
