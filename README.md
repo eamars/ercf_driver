@@ -25,6 +25,50 @@ The goal is to re-implement all feature that is provided by the ERCF driver in p
 # Configurations
 An example configuration file is supplied in "ercf_config.cfg". Please use the example file as the reference and modify as needed. Most variables are self explained. Otherwise referring the variable back to the context would help understanding the usage of the ERCF driver better. 
 
+Example configuration
+
+```ini
+[ercf]
+# Compulsory params
+gear_stepper: manual_stepper gear_stepper                  # full name is required
+selector_stepper: manual_stepper selector_stepper          # full name is required
+servo: servo ercf_servo                                    # full name is required
+toolhead_sensor: filament_switch_sensor toolhead_sensor    # full name is required
+encoder_pin: ebb_ercf_02:PB3                               # The pin must be shared via [duplicate_pin_override]
+
+servo_up_angle: 30                                         # The angle when the servo arm is in UP position. See the ERCF manual for more information.
+servo_down_angle: 115                                      # The angle when the servo arm is in DOWN position. See the ERCF manual for more information.
+
+variable_path: ...                                         # The path to the ERCF variable file. Usually [/home/pi/klipper_config/ercf_vars.cfg]
+
+# Optional params. The default value is specified
+extra_servo_dwell_up: 0                                    # The extra time in second that the servo need to dwell in up position (?)
+extra_servo_dwell_down: 0                                  # The extra time in second that the servo need to dwell in down position (?)
+
+encoder_sample_time: 0.1                                   # The ERCF encoder sampling time in second. 
+encoder_poll_time: 0.0001                                  # The ERCF encoder poll time in seconds.
+long_moves_speed: 100                                      # Long pulse move speed in mm/s. The speed is also been used by the single long move. 
+long_moves_accel: 400                                      # Long pulse move acceleration in mm/s. Note the acceleration only apply to gear stepper motion.
+short_moves_speed: 25                                      # Short pulse move speed in mm/s. 
+short_moves_accel: 400                                     # Short pulse move acceleration in mm/s. Note the acceleration only apply to gear stepper motion.
+gear_stepper_long_move_threshold: 70                       # (Deprecated) The threshold that determines the move speed/acceleration between short and long move. 
+
+extra_move_margin: 100                                     # The extra margin that appends to the move where pending on the trigger condition (filament slip or toggle of the filament sensor. 
+long_move_distance: 30                                     # The long pulse move distance in mm. 
+short_move_distance: 10                                    # The short pulse move distance in mm.
+minimum_step_distance: 5                                   # The minimum step distance in mm that can be detected by the ERCF encoder.
+maximum_move_distance: 1500                                # The maximum continuous move distance (can include multiple steps) in mm.
+maximum_step_distance: 1500                                # The maximum single step move distance in mm.
+calibrate_move_distance_per_step: 3                        # The step distance in mm used during calibration. 
+
+selector_filament_engagement_retry: 2                      # The maximum retry while the filament failes to engage. 
+auto_home_selector: True                                   # Automatically home the selector if not homed previously when a selector move is requested.
+tip_forming_gcode_before_calibration: None                 # The tip forming gcode to run before running the calibration routine (_ERCF_CALIBRATE_COMPONENT_LENGTH).
+slip_detection_ratio_threshold: 3                          # If the actual move distance is less than [1/threshold * requested_distance] then the code will consider it slip
+
+```
+
+
 # ERCF Calibration
 ## Calibration Data Storage
 Calibration data are stored as variables in Klipper. The calibration data will be populated automatically by the ERCF code therefore no user interaction is required. The user is not expected to manually update the "ercf_vars.cfg". The following is just the explaination of each field and serves only the informative purpose. 
