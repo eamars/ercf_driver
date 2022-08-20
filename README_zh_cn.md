@@ -1,4 +1,4 @@
-ERCF Python版驱动
+Python版兔子MMU驱动
 ===
 
 # 目标
