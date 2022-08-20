@@ -4,6 +4,21 @@ Python版兔子MMU驱动
 # 目标
 重写ERCF的目的是修复当前ERCF中的一些设计缺陷，bug，增加额外的料材状态检测，以及增加一部分很Cooool的功能。新版ERCF将主要由Python重写，配合少许Gcode宏实现，以达成增加换色稳定性的目的。
 
+# 安装（集成 Moonraker）
+将代码同步到当前用户根目录
+
+    cd ~
+    git clone git@github.com:eamars/ercf_driver.git
+    
+将以下内容复制到 moonraker.conf
+  
+    [update_manager client ercf_driver]
+    type: git_repo
+    path: ~/ercf_driver
+    origin: git@github.com:eamars/ercf_driver.git
+    install_script: install.sh
+    managed_services: klipper
+
 # Gcode宏
 ## 更换工具类
 - `T1-T9`: 将选择器移动到对应的耗材仓并将耗材推送到喷嘴。
