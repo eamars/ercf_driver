@@ -20,10 +20,13 @@ The goal is to re-implement all feature that is provided by the ERCF driver in p
 - `_ERCF_CALIBRATE_ENCODER_RESOLUTION`: Automate calibrate the ERCF encoder on the colour selector. 
 - `_ERCF_CALIBRATE_COMPONENT_LENGTH`: Run the calibration routine to determine the length of each component in the system. The calibration procedure must start with filament already inserted at the nozzle. 
 - `_ERCF_CALIBRATE_SELECTOR_LOCATION`: Calibrate the location of the selector by moving the selector to the filament block then running the homing routine. 
-- `_ERCF_CALIBRATE_EXTRUSION_FACTOR`: Calibrate the extrusion factor of each filament at the block to compensate for difference in extrusion for multiple materials. 
+- `_ERCF_CALIBRATE_EXTRUSION_FACTOR`: Calibrate the extrusion factor of each filament at the block to compensate for difference in extrusion for multiple materials.
+
+# Configurations
+An example configuration file is supplied in "ercf_config.cfg". Please use the example file as the reference and modify as needed. Most variables are self explained. Otherwise referring the variable back to the context would help understanding the usage of the ERCF driver better. 
 
 # ERCF Calibration
-## Calibration data storage
+## Calibration Data Storage
 Calibration data are stored as variables in Klipper. The calibration data will be populated automatically by the ERCF code therefore no user interaction is required. The user is not expected to manually update the "ercf_vars.cfg". The following is just the explaination of each field and serves only the informative purpose. 
 - `calibrated_encoder_resolution`: The calibrated encoder resolution used by the ERCF driver. 
 - `calibrated_extruder_to_selector_length`: The distance between the extruder and toolhead sensor measured in mm. Usually the length is less than 50mm for direct drive system and much longer for bowden and dual (multiple) inline extruders setup.
@@ -34,5 +37,5 @@ Calibration data are stored as variables in Klipper. The calibration data will b
 - `color_selector_positions`: The selector position for each filament block. This variable shall match the number of filament blocks in the system. 
 
 ## Calibration Procedure
-
+My recommendation to the calibration procedure is to follow the current ERCF instruction for the `rotation_distance`, encoder resolution, extrusion factor, then run the `_ERCF_CALIBRATE_COMPONENT_LENGTH` when the filament is fully loaded to the nozzle. The calibration routine will then retract the filament from the nozzle all the way back to the filament block in short slow pulse. During that process the length of each component shall be recorded. 
 
