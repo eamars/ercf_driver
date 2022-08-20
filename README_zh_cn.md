@@ -1,6 +1,6 @@
 Python版兔子MMU驱动
 ===
-
+[English](README.md)
 # 目标
 重写ERCF的目的是修复当前ERCF中的一些设计缺陷，bug，增加额外的料材状态检测，以及增加一部分很Cooool的功能。新版ERCF将主要由Python重写，配合少许Gcode宏实现，以达成增加换色稳定性的目的。
 
