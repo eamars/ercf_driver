@@ -1,5 +1,6 @@
 Alternative ERCF Driver Implementation - A Python implementation based on Klipper
 ====
+[中文版](https://github.com/eamars/ercf_driver/blob/main/README_zh_cn.md)
 # Goal
 The goal of the alternative ERCF implementation is to overcome drawbacks from the current ERCF driver, as well as adding several cool features. 
 The goal is to re-implement all feature that is provided by the ERCF driver in pure Python, with additional checks preventing load failures and jamming caused by failure to eject. 
