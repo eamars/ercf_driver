@@ -48,9 +48,9 @@ extra_servo_dwell_down: 0                                  # The extra time in s
 encoder_sample_time: 0.1                                   # The ERCF encoder sampling time in second. 
 encoder_poll_time: 0.0001                                  # The ERCF encoder poll time in seconds.
 long_moves_speed: 100                                      # Long pulse move speed in mm/s. The speed is also been used by the single long move. 
-long_moves_accel: 400                                      # Long pulse move acceleration in mm/s. Note the acceleration only apply to gear stepper motion.
+long_moves_accel: 400                                      # Long pulse move acceleration in mm/s^2. Note the acceleration only apply to gear stepper motion.
 short_moves_speed: 25                                      # Short pulse move speed in mm/s. 
-short_moves_accel: 400                                     # Short pulse move acceleration in mm/s. Note the acceleration only apply to gear stepper motion.
+short_moves_accel: 400                                     # Short pulse move acceleration in mm/s^2. Note the acceleration only apply to gear stepper motion.
 gear_stepper_long_move_threshold: 70                       # (Deprecated) The threshold that determines the move speed/acceleration between short and long move. 
 
 extra_move_margin: 100                                     # The extra margin that appends to the move where pending on the trigger condition (filament slip or toggle of the filament sensor. 
@@ -65,7 +65,6 @@ selector_filament_engagement_retry: 2                      # The maximum retry w
 auto_home_selector: True                                   # Automatically home the selector if not homed previously when a selector move is requested.
 tip_forming_gcode_before_calibration: None                 # The tip forming gcode to run before running the calibration routine (_ERCF_CALIBRATE_COMPONENT_LENGTH).
 slip_detection_ratio_threshold: 3                          # If the actual move distance is less than [1/threshold * requested_distance] then the code will consider it slip
-
 ```
 
 
