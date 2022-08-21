@@ -1,0 +1,21 @@
+{
+  "materials": {
+    "unspecified": {
+      "minimum_extrusion_temperature": 230,
+      "tip_forming_macro": "_ERCF_FORM_TIP_STANDALONE",
+      "minimum_purge_length": 70
+    },
+    "ABS": {
+      "minimum_extrusion_temperature": 230,
+      "tip_forming_macro": "_ERCF_FORM_TIP_STANDALONE"
+    },
+    "PLA": {
+      "minimum_extrusion_temperature": 190,
+      "tip_forming_macro": "_ERCF_FORM_TIP_STANDALONE"
+    },
+    "PETG": {
+      "minimum_extrusion_temperature": 220,
+      "tip_forming_macro": "_ERCF_FORM_TIP_STANDALONE"
+    }
+  }
+}
