@@ -780,7 +780,7 @@ class ERCF(object):
 
         # Check if the filament is already loaded somehow. If the filament is already partially loaded then run the
         # unload to start from clean state
-        if self.is_filament_in_selector():
+        if self.is_filament_in_selector(lift_servo=False):
             self.ercf_unload(gcmd)
 
         accumulated_step_distance = 0
@@ -861,8 +861,8 @@ class ERCF(object):
         # we are on the filament sensor, move the final distance
         self.ercf_load_from_toolhead_sensor(gcmd)
 
-    def is_filament_in_selector(self):
-        with self._gear_stepper_move_guard():
+    def is_filament_in_selector(self, lift_servo=True):
+        with self._gear_stepper_move_guard(lift_servo):
             self.motion_counter.reset_counts()
             self.servo_down()
             move_distance = self.motion_counter.get_distance()
