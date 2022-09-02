@@ -475,7 +475,7 @@ class ERCF(object):
             pass
         finally:
             if stepper_stop_callback:
-                stepper_stop_callback()
+                stepper_stop_callback(stepper_status)
 
         gcmd.respond_info('Actual stepper move distance: {}'.format(accumulated_move_distance * direction))
 
