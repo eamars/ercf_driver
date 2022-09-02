@@ -85,6 +85,8 @@ class ERCF(object):
         self.short_moves_accel = config.getfloat('short_moves_accel', 400.)
         self.gear_stepper_long_move_threshold = config.getfloat('gear_stepper_long_move_threshold', 70)
         self.gear_stepper_accel = config.getfloat('gear_stepper_accel', 0)
+        self.extruder_move_speed = config.getfloat('extruder_move_speed', None)
+        self.extruder_move_accel = config.getfloat('extruder_move_accel', None)
 
         # Step distance
         self.extra_move_margin = config.getfloat('extra_move_margin', 100)
@@ -176,6 +178,15 @@ class ERCF(object):
             self.toolhead_sensor = self.printer.lookup_object(self.toolhead_sensor_name)
 
         self.reference_gear_stepper_rotation_distance = self.gear_stepper.get_steppers()[0].get_rotation_distance()[0]
+
+        self.original_extruder_move_speed = self.toolhead.get_extruder().max_e_velocity
+        self.original_extruder_move_accel = self.toolhead.get_extruder().max_e_accel
+
+        # Read extruder move speed and acceleration
+        if self.extruder_move_speed is None:
+            self.extruder_move_speed = self.original_extruder_move_speed
+        if self.extruder_move_accel is None:
+            self.extruder_move_accel = self.original_extruder_move_accel
 
         # Initialize state machine status
         self._servo_status = None
@@ -371,6 +382,7 @@ class ERCF(object):
                                                            step_distance=step_distance, step_speed=step_speed,
                                                            stepper_block_move_callback=self._toolhead_block_move,
                                                            stepper_init_callback=self._toolhead_move_init,
+                                                           stepper_stop_callback=self._toolhead_move_stop,
                                                            initial_condition_callback=initial_condition_callback,
                                                            stop_condition_callback=stop_condition_callback,
                                                            raise_on_filament_slip=raise_on_filament_slip,
@@ -380,6 +392,7 @@ class ERCF(object):
     def stepper_move_wait(self, gcmd, target_move_distance,
                           stepper_block_move_callback,
                           stepper_init_callback=None,
+                          stepper_stop_callback=None,
                           step_distance=None, step_speed=None, step_accel=None,
                           initial_condition_callback=None, stop_condition_callback=None,
                           raise_on_filament_slip=True,
@@ -456,7 +469,9 @@ class ERCF(object):
                 gcmd.respond_info(msg)
         except StopConditionException:
             pass
-
+        finally:
+            if stepper_stop_callback:
+                stepper_stop_callback()
 
         gcmd.respond_info('Actual stepper move distance: {}'.format(accumulated_move_distance * direction))
 
@@ -473,7 +488,18 @@ class ERCF(object):
         self.gcode.run_script_from_command('G92 E0')
         toolhead_position = self.toolhead.get_position()
 
+        # Set acceleration
+        extruder = self.toolhead.get_extruder()
+        extruder.max_e_velocity = self.extruder_move_speed
+        extruder.max_e_accel = self.extruder_move_accel
+
         return toolhead_position
+
+    def _toolhead_move_stop(self, stepper_status):
+        # Restore speed and acceleration
+        extruder = self.toolhead.get_extruder()
+        extruder.max_e_velocity = self.original_extruder_move_speed
+        extruder.max_e_accel = self.original_extruder_move_accel
 
     def _gear_stepper_block_move(self, stepper_status, relative_step_distance, speed, accel):
         self.gear_stepper.do_set_position(0)
@@ -573,6 +599,7 @@ class ERCF(object):
                                                           target_move_distance=-target_move_distance,
                                                           stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                           stepper_init_callback=self._toolhead_move_init,
+                                                          stepper_stop_callback=self._toolhead_move_stop,
                                                           step_distance=self.short_move_distance,
                                                           step_speed=self.short_moves_speed,
                                                           step_accel=self.short_moves_accel,
@@ -687,6 +714,7 @@ class ERCF(object):
                                                                   target_move_distance=-target_move_distance,
                                                                   stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                                   stepper_init_callback=self._toolhead_move_init,
+                                                                  stepper_stop_callback=self._toolhead_move_stop,
                                                                   step_distance=self.short_move_distance,
                                                                   step_speed=self.short_moves_speed,
                                                                   step_accel=self.short_moves_accel,
@@ -739,6 +767,7 @@ class ERCF(object):
                                                                  target_move_distance=30,
                                                                  stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                                  stepper_init_callback=self._toolhead_move_init,
+                                                                 stepper_stop_callback=self._toolhead_move_stop,
                                                                  step_distance=30,
                                                                  step_speed=self.short_moves_speed,
                                                                  step_accel=self.short_moves_accel,
@@ -758,6 +787,7 @@ class ERCF(object):
                                                                     target_move_distance=target_distance,
                                                                     stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                                     stepper_init_callback=self._toolhead_move_init,
+                                                                    stepper_stop_callback=self._toolhead_move_stop,
                                                                     step_distance=self.long_move_distance,
                                                                     step_speed=self.short_moves_speed,
                                                                     step_accel=self.short_moves_accel,
@@ -826,6 +856,7 @@ class ERCF(object):
                                                      step_accel=self.short_moves_accel,
                                                      stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                      stepper_init_callback=self._toolhead_move_init,
+                                                     stepper_stop_callback=self._toolhead_move_stop,
                                                      raise_on_filament_slip=True)
             accumulated_step_distance += actual_distance
 
