@@ -313,8 +313,9 @@ class ERCF(object):
             servo_name = self.servo_name.split()[1]
             self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                     self.servo_up_angle))
-            self.toolhead.wait_moves()
-            time.sleep(0.25 + self.extra_servo_dwell_up)
+            self.toolhead.dwell(0.25 + self.extra_servo_dwell_up)
+
+            # Turn servo off
             self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
             self.toolhead.wait_moves()
 
@@ -325,19 +326,22 @@ class ERCF(object):
 
             # do the gear meshing to ensure the proper alignment of the selector gear
             self.gear_stepper.do_set_position(0)
-            self.gear_stepper.do_move(0.5, speed=25, accel=self.gear_stepper_accel)
+            self.gear_stepper.do_move(0.5, speed=25, accel=self.gear_stepper_accel, sync=False)
 
             self.gcode.run_script_from_command('SET_SERVO SERVO={} ANGLE={}'.format(servo_name,
                                                                                     self.servo_down_angle))
             self.toolhead.wait_moves()
-            time.sleep(0.2)
+            self.toolhead.dwell(0.2)
 
-            self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
-            time.sleep(0.1)
-            self.gear_stepper.do_move(-0.5, speed=25, accel=self.gear_stepper_accel)
-            time.sleep(0.1 + self.extra_servo_dwell_down)
-            self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel)
+            self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel, sync=False)
+            self.toolhead.dwell(0.1)
+            self.gear_stepper.do_move(-0.5, speed=25, accel=self.gear_stepper_accel, sync=False)
+            self.toolhead.dwell(0.1 + self.extra_servo_dwell_down)
+            self.gear_stepper.do_move(0.0, speed=25, accel=self.gear_stepper_accel, sync=False)
+
             self.toolhead.wait_moves()
+
+            # Turn off
             self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
             self.toolhead.wait_moves()
