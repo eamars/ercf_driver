@@ -67,6 +67,8 @@ long_moves_speed: 100                                      # Long pulse move spe
 long_moves_accel: 400                                      # Long pulse move acceleration in mm/s^2. Note the acceleration only apply to gear stepper motion.
 short_moves_speed: 25                                      # Short pulse move speed in mm/s. 
 short_moves_accel: 400                                     # Short pulse move acceleration in mm/s^2. Note the acceleration only apply to gear stepper motion.
+extruder_move_speed: 100                                   # Extruder move speed override, in mm/s
+extruder_move_accel: 400                                   # Extruder move acceleration override, in mm/s^2
 gear_stepper_long_move_threshold: 70                       # (Deprecated) The threshold that determines the move speed/acceleration between short and long move. 
 
 extra_move_margin: 100                                     # The extra margin that appends to the move where pending on the trigger condition (filament slip or toggle of the filament sensor. 

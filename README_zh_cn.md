@@ -66,6 +66,8 @@ long_moves_speed: 100                                      # 长脉冲移动速�
 long_moves_accel: 400                                      # 长脉冲移动加速度，单位为mm/s^2。需要注意的是该设置只能配置ERCF挤出机的加速度
 short_moves_speed: 25                                      # 短脉冲移动速度，单位为mm/s
 short_moves_accel: 400                                     # 短脉冲移动加速度，单位为mm/s^2。需要注意的是该设置只能配置ERCF挤出机的加速度
+extruder_move_speed: 100                                   # 挤出机挤出速度，单位为mm/s
+extruder_move_accel: 400                                   # 挤出机挤出加速度，单位为 mm/s^2
 gear_stepper_long_move_threshold: 70                       # (已过时) 区分长短脉冲的临界值
 
 extra_move_margin: 100                                     # 等待触发时额外的耗材挤出距离。触发条件为耗材打滑或是耗材触发了工具头上的断料检测
