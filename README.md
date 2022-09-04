@@ -100,3 +100,13 @@ Calibration data are stored as variables in Klipper. The calibration data will b
 ## Calibration Procedure
 My recommendation to the calibration procedure is to follow the current ERCF instruction for the `rotation_distance`, encoder resolution, extrusion factor, then run the `_ERCF_CALIBRATE_COMPONENT_LENGTH` when the filament is fully loaded to the nozzle. The calibration routine will then retract the filament from the nozzle all the way back to the filament block in short slow pulse. During that process the length of each component shall be recorded. 
 
+# Mini12864 Display Integration
+The ERCF can be integrated to the Mini12864 display showing the current tool and much more with provided ERCF API interface.
+
+To replace the feed rate with the current ERCF tool, you can paste the following gcode macro to your `ercf_macro.cfg`.
+```ini
+[display_data _default_16x4 speed_factor]
+position: 1,10
+text: { render("_ercf_current_tool") }
+```
+![mini12864_integration](resource/IMG_0839.jpg)

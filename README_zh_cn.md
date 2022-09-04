@@ -98,3 +98,11 @@ slip_detection_ratio_threshold: 3                          # 耗材打滑比例 
 ## 校准步骤
 建议参考ERCF手册中的校准步骤。
 
+# Mini12864 集成
+以下代码可以将ERCF当前工具集成于Mini12864显示屏当中以替代挤出速率显示。如需使用请将如下代码插入到`ercf_macros.cfg`任意位置。
+```ini
+[display_data _default_16x4 speed_factor]
+position: 1,10
+text: { render("_ercf_current_tool") }
+```
+![mini12864_integration](resource/IMG_0839.jpg)
