@@ -8,7 +8,7 @@ Python版兔子MMU驱动
 将代码同步到当前用户根目录
 
     cd ~
-    git clone git@github.com:eamars/ercf_driver.git
+    git clone https://github.com/eamars/ercf_driver.git
     
 将以下内容复制到 moonraker.conf
   

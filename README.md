@@ -9,7 +9,7 @@ The goal is to re-implement all feature that is provided by the ERCF driver in p
 Clone the repository to the home directory
 
     cd ~
-    git clone git@github.com:eamars/ercf_driver.git
+    git clone https://github.com/eamars/ercf_driver.git
   
 Then copy the below block into the moonraker.conf
 
