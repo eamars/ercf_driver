@@ -15,10 +15,10 @@ Then copy the below block into the moonraker.conf
 
     [update_manager client ercf_driver]
     type: git_repo
-    path: ~/ercf_driver
-    origin: git@github.com:eamars/ercf_driver.git
+    primary_branch: main
+    path: /home/pi/ercf_driver
+    origin: https://github.com/eamars/ercf_driver.git
     install_script: install.sh
-    managed_services: klipper
 
 # GCode Macros
 ## Tool Changes
