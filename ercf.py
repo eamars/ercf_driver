@@ -814,7 +814,7 @@ class ERCF(object):
 
         # Check if the filament is already loaded somehow. If the filament is already partially loaded then run the
         # unload to start from clean state
-        if self.is_filament_in_selector(lift_servo=False):
+        if self.is_filament_in_selector(lift_servo=False, skip_filament_block_check=True):
             self.ercf_unload(gcmd)
 
         accumulated_step_distance = 0
@@ -896,12 +896,13 @@ class ERCF(object):
         # we are on the filament sensor, move the final distance
         self.ercf_load_from_toolhead_sensor(gcmd)
 
-    def is_filament_in_selector(self, lift_servo=True):
+    def is_filament_in_selector(self, lift_servo=True, skip_filament_block_check=False):
         with self._gear_stepper_move_guard(lift_servo):
             self.motion_counter.reset_counts()
             self.servo_down()
             move_distance = self.motion_counter.get_distance()
 
+            # If the filament is moving while gear meshing then the filament is certainly inserted
             if move_distance > 0:
                 return True
 
@@ -910,12 +911,17 @@ class ERCF(object):
             self.motion_counter.reset_counts()
             self.gear_stepper.do_move(1, self.short_moves_speed, self.short_moves_accel, True)
             self.gear_stepper.do_move(0, self.short_moves_speed, self.short_moves_accel, True)
+            self.toolhead.wait_moves()
             move_distance = self.motion_counter.get_distance()
 
             if move_distance > 0:
                 return True
 
-            # Third check (move 8mm forward to check if the
+            # No need to check further, we can assume the filament is not present
+            if skip_filament_block_check:
+                return False
+
+            # Third check (move 8mm forward to check if the filament is just extruded from the filament block)
             self.gear_stepper.do_set_position(0)
             self.gear_stepper.do_move(8, self.short_moves_speed, self.short_moves_accel, True)
             self.gear_stepper.do_move(0, self.short_moves_speed, self.short_moves_accel, True)
@@ -933,7 +939,7 @@ class ERCF(object):
 
         # Check the filament status
         if self.is_filament_in_selector():
-            gcmd.respond_info('Filament is still in the selector card. Will do the unload')
+            gcmd.respond_info('Filament is still in the selector cart. Will do the unload')
 
             # There is chance this will fail as the filament already retracted in the block but require 1-3mm retraction
             self.ercf_unload(gcmd)
@@ -979,7 +985,7 @@ class ERCF(object):
 
             # Check the filament status
             elif not force and self.is_filament_in_selector():
-                gcmd.respond_info('Filament is still in the selector card. Will do the unload')
+                gcmd.respond_info('Filament is still in the selector cart. Will do the unload')
                 self.ercf_unload(gcmd)
 
             # Move the selector
