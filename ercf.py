@@ -101,6 +101,7 @@ class ERCF(object):
         self.servo_down_angle = config.getfloat('servo_down_angle')
         self.extra_servo_dwell_up = config.getfloat('extra_servo_dwell_up', 0)
         self.extra_servo_dwell_down = config.getfloat('extra_servo_dwell_down', 0)
+        self.servo_down_turn_off = config.get('servo_down_turn_off', True)
 
         # Others
         self.selector_filament_engagement_retry = config.getint('selector_filament_engagement_retry', 2)
@@ -341,8 +342,9 @@ class ERCF(object):
 
             self.toolhead.wait_moves()
 
-            # Turn off
-            self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
+            # Turn off if required
+            if self.servo_down_turn_off:
+                self.gcode.run_script_from_command('SET_SERVO SERVO={} WIDTH=0.0'.format(servo_name))
 
             self.toolhead.wait_moves()
 
