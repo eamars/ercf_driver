@@ -944,7 +944,17 @@ class ERCF(object):
             gcmd.respond_info('Filament is still in the selector cart. Will do the unload')
 
             # There is chance this will fail as the filament already retracted in the block but require 1-3mm retraction
-            self.ercf_unload(gcmd)
+            try:
+                self.ercf_unload(gcmd)
+            except Exception as e:
+                # Check if the filament is in the selector again. If clear then we should ignore the unload error
+                if self.is_filament_in_selector():
+                    # Not good. Need some help from the user
+                    gcmd.respond_info('Unable to clear the filament from the selector. Requires user attention')
+                    raise
+                else:
+                    gcmd.respond_info('Filament is clear from the selector. Will continue homing')
+
 
         # TODO: Implement the sensorless homing
         self.selector_stepper.do_set_position(0)
