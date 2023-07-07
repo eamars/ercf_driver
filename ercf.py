@@ -411,6 +411,9 @@ class ERCF(object):
         if step_distance is None:
             step_distance = min(self.long_move_distance, abs(target_move_distance))
 
+        # Calculate maximum single step distance based on the user config to avoid `Timer too close` issue.
+        step_distance = min(step_distance, self.maximum_step_distance)
+
         if target_move_distance >= 0:
             direction = 1
         else:
