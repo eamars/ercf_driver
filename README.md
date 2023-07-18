@@ -50,7 +50,7 @@ gear_stepper: manual_stepper gear_stepper                  # full name is requir
 selector_stepper: manual_stepper selector_stepper          # full name is required
 servo: servo ercf_servo                                    # full name is required
 toolhead_sensor: filament_switch_sensor toolhead_sensor    # full name is required
-encoder_pin: ebb_ercf_02:PB3                               # The pin must be shared via [duplicate_pin_override]
+encoder_pin: ercf:gpio15                                   # The pin must be shared via [duplicate_pin_override]
 
 servo_up_angle: 30                                         # The angle when the servo arm is in UP position. See the ERCF manual for more information.
 servo_down_angle: 115                                      # The angle when the servo arm is in DOWN position. See the ERCF manual for more information.
@@ -83,6 +83,7 @@ selector_filament_engagement_retry: 2                      # The maximum retry w
 auto_home_selector: True                                   # Automatically home the selector if not homed previously when a selector move is requested.
 tip_forming_gcode_before_calibration: None                 # The tip forming gcode to run before running the calibration routine (_ERCF_CALIBRATE_COMPONENT_LENGTH).
 slip_detection_ratio_threshold: 3                          # If the actual move distance is less than [1/threshold * requested_distance] then the code will consider it slip
+servo_down_turn_off: False                                 # Select whether to turn off the servo motor while the arm is in place
 ```
 
 
