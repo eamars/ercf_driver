@@ -1284,7 +1284,7 @@ class ERCF(object):
                     'https://github.com/eamars/ercf_driver/blob/main/ercf_vars.cfg'
                 )
 
-            self.all_variables['calibrated_nozzle_to_extruder_length'] = actual_distance
+            self.all_variables['calibrated_nozzle_to_extruder_length'] = abs(actual_distance)
 
             self.log_to_gcmd_respond(gcmd, "Stage 1 Done")
 
@@ -1307,7 +1307,7 @@ class ERCF(object):
                     'the filament can be ejected to the spool'
                 )
 
-            self.all_variables['calibrated_nozzle_to_sensor_length'] = actual_distance
+            self.all_variables['calibrated_nozzle_to_sensor_length'] = abs(actual_distance)
 
             self.log_to_gcmd_respond(gcmd, "Stage 1a Done")
 
@@ -1331,7 +1331,7 @@ class ERCF(object):
                     'https://github.com/eamars/ercf_driver/blob/main/ercf_vars.cfg'
                 )
 
-            self.all_variables['calibrated_nozzle_to_extruder_length'] = actual_distance
+            self.all_variables['calibrated_nozzle_to_extruder_length'] = abs(actual_distance)
 
             self.log_to_gcmd_respond(gcmd, "Stage 1b Done")
 
@@ -1380,6 +1380,7 @@ class ERCF(object):
                     'https://github.com/eamars/ercf_driver/blob/main/ercf_vars.cfg'
                 )
 
+            self.all_variables['calibrated_extruder_to_selector_length'] = abs(actual_distance)
             self.log_to_gcmd_respond(gcmd, "Stage 2b Done")
 
         ############
