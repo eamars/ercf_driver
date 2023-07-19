@@ -260,7 +260,8 @@ class ERCF(object):
             if idle_timeout is None:
                 raise self.printer.config_error("No idle timeout found")
 
-            status = idle_timeout.get_status()
+            curtime = self.printer.get_reactor().monotonic()
+            status = idle_timeout.get_status(curtime)
             if status['state'] == 'Printing':
                 gcmd.respond_info('Caught exception: {}, Calling {}'.format(e, self.MACRO_PAUSE))
                 self.gcode.run_script_from_command(self.MACRO_PAUSE)
