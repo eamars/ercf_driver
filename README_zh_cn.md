@@ -62,26 +62,29 @@ extra_servo_dwell_down: 0                                  #
 
 encoder_sample_time: 0.1                                   # ERCF样本时间
 encoder_poll_time: 0.0001                                  # 编码器轮询时间，单位为秒
-long_moves_speed: 100                                      # 长脉冲移动速度，单位为mm/s
-long_moves_accel: 400                                      # 长脉冲移动加速度，单位为mm/s^2。需要注意的是该设置只能配置ERCF挤出机的加速度
-short_moves_speed: 25                                      # 短脉冲移动速度，单位为mm/s
-short_moves_accel: 400                                     # 短脉冲移动加速度，单位为mm/s^2。需要注意的是该设置只能配置ERCF挤出机的加速度
-extruder_move_speed: 100                                   # 挤出机挤出速度，单位为mm/s
+long_moves_speed: 100                                      # 长脉冲移动速度，单位为 mm/s
+long_moves_accel: 400                                      # 长脉冲移动加速度，单位为 mm/s^2。需要注意的是该设置只能配置ERCF挤出机的加速度
+short_moves_speed: 25                                      # 短脉冲移动速度，单位为 mm/s
+short_moves_accel: 400                                     # 短脉冲移动加速度，单位为 mm/s^2。需要注意的是该设置只能配置ERCF挤出机的加速度
+extruder_move_speed: 100                                   # 挤出机挤出速度，单位为 mm/s
 extruder_move_accel: 400                                   # 挤出机挤出加速度，单位为 mm/s^2
 gear_stepper_long_move_threshold: 70                       # (已过时) 区分长短脉冲的临界值
 
 extra_move_margin: 100                                     # 等待触发时额外的耗材挤出距离。触发条件为耗材打滑或是耗材触发了工具头上的断料检测
-long_move_distance: 30                                     # 长脉冲移动距离，单位为mm
-short_move_distance: 10                                    # 短脉冲移动距离，单位为mm
-minimum_step_distance: 5                                   # ERCF编码器最低可检测耗材移动距离，单位为mm
-maximum_move_distance: 1500                                # 最大单次移动距离（可包含多个脉冲移动），单位为mm
-maximum_step_distance: 1500                                # 最大单步移动距离，单位为mm
-calibrate_move_distance_per_step: 3                        # 校准时耗材单步移动距离，单位为mm
+long_move_distance: 30                                     # 长脉冲移动距离，单位为 mm
+short_move_distance: 10                                    # 短脉冲移动距离，单位为 mm
+minimum_step_distance: 5                                   # ERCF编码器最低可检测耗材移动距离，单位为 mm
+maximum_move_distance: 1500                                # 最大单次移动距离（可包含多个脉冲移动），单位为 mm
+maximum_step_distance: 1500                                # 最大单步移动距离，单位为 mm
+calibrate_move_distance_per_step: 3                        # 校准时耗材单步移动距离，单位为 mm
 
 selector_filament_engagement_retry: 2                      # 最大尝试次数（用于ERCF挤出机无法咬住耗材时重试）
 auto_home_selector: True                                   # 若选择器未归零则任何选择器相关的移动将触发归零动作
 tip_forming_gcode_before_calibration: None                 # 长度校准之前运行的耗材头抽插宏
 slip_detection_ratio_threshold: 3                          # 耗材打滑比例 （若每步耗材实际移动距离小于[1/threshold * requested_distance]则认为是打滑）
+
+extruder_move_speed: 120                                   # 覆盖挤出机挤出速度，单位为 mm/s
+extruder_move_accel: 800                                   # 覆盖挤出机挤出加速度，单位为 mm/s^2
 ```
 
 # ERCF校准

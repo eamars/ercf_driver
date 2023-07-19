@@ -84,6 +84,9 @@ auto_home_selector: True                                   # Automatically home 
 tip_forming_gcode_before_calibration: None                 # The tip forming gcode to run before running the calibration routine (_ERCF_CALIBRATE_COMPONENT_LENGTH).
 slip_detection_ratio_threshold: 3                          # If the actual move distance is less than [1/threshold * requested_distance] then the code will consider it slip
 servo_down_turn_off: False                                 # Select whether to turn off the servo motor while the arm is in place
+
+extruder_move_speed: 120                                   # Override the extruder speed during the filament loading/unloading
+extruder_move_accel: 800                                   # Override the extruder acceleration during the filament loading/unloading
 ```
 
 
