@@ -1273,7 +1273,7 @@ class ERCF(object):
             self.log_to_gcmd_respond(gcmd, "Stage 1: Calibrating nozzle to extruder length")
             try:
                 actual_distance = self.toolhead_move_wait(gcmd, raise_on_filament_slip=False,
-                                                          target_move_distance=self.all_variables.get('calibrated_nozzle_to_extruder_length') + self.extra_move_margin,
+                                                          target_move_distance=-(self.all_variables.get('calibrated_nozzle_to_extruder_length') + self.extra_move_margin),
                                                           step_distance=self.long_move_distance,  # Use single long move to get filament out
                                                           step_speed=self.short_moves_speed,
                                                           expect_partial_move=True)
@@ -1298,7 +1298,7 @@ class ERCF(object):
             self.log_to_gcmd_respond(gcmd, "Stage 1a: Calibrating nozzle to sensor length")
             try:
                 actual_distance = self.toolhead_move_wait(gcmd, raise_on_filament_slip=True,
-                                                          target_move_distance=self.all_variables.get('calibrated_nozzle_to_sensor_length'),
+                                                          target_move_distance=-(self.all_variables.get('calibrated_nozzle_to_sensor_length') + self.extra_move_margin),
                                                           step_distance=self.calibrate_move_distance_per_step,
                                                           step_speed=self.short_moves_speed)
             except self.printer.command_error:
@@ -1320,8 +1320,7 @@ class ERCF(object):
             self.log_to_gcmd_respond(gcmd, "Stage 1b: Calibrating sensor to extruder length")
             try:
                 actual_distance = self.toolhead_move_wait(gcmd, raise_on_filament_slip=False,
-                                                          target_move_distance=self.all_variables.get(
-                                                              'calibrated_nozzle_to_extruder_length') + self.extra_move_margin,
+                                                          target_move_distance=-(self.all_variables.get('calibrated_nozzle_to_extruder_length') + self.extra_move_margin),
                                                           step_distance=self.calibrate_move_distance_per_step,
                                                           step_speed=self.short_moves_speed,
                                                           expect_partial_move=True)
@@ -1349,7 +1348,7 @@ class ERCF(object):
             self.log_to_gcmd_respond(gcmd, "Stage 2a: Calibrating extruder to selector length (small sync move)")
             try:
                 actual_distance = self.stepper_move_wait(gcmd,
-                                                         target_move_distance=self.short_move_distance,
+                                                         target_move_distance=-self.short_move_distance,
                                                          stepper_block_move_callback=self._toolhead_gear_stepper_synchronized_block_move,
                                                          stepper_init_callback=self._toolhead_move_init,
                                                          stepper_stop_callback=self._toolhead_move_stop,
@@ -1368,7 +1367,7 @@ class ERCF(object):
             self.log_to_gcmd_respond(gcmd, "Stage 2b: Calibrating extruder to selector length")
             try:
                 actual_distance += self.gear_stepper_move_wait(gcmd,
-                                                               target_move_distance=self.all_variables['calibrated_extruder_to_selector_length'] + self.extra_move_margin,
+                                                               target_move_distance=-(self.all_variables['calibrated_extruder_to_selector_length'] + self.extra_move_margin),
                                                                step_distance=self.calibrate_move_distance_per_step,
                                                                step_speed=self.short_moves_speed,
                                                                step_accel=self.short_moves_accel,
