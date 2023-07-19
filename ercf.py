@@ -241,7 +241,7 @@ class ERCF(object):
         self._current_tool = None
 
     def log_to_gcmd_respond(self, gcmd, text):
-        gcmd.respond_info("AdaptiveBedMesh:" + text)
+        gcmd.respond_info("ERCF:" + text)
 
     @contextmanager
     def _gear_stepper_move_guard(self, lift_servo=True):
@@ -1274,8 +1274,8 @@ class ERCF(object):
             try:
                 actual_distance = self.toolhead_move_wait(gcmd, raise_on_filament_slip=False,
                                                           target_move_distance=self.all_variables.get('calibrated_nozzle_to_extruder_length') + self.extra_move_margin,
-                                                          step_distance=self.calibrate_move_distance_per_step,
-                                                          step_speed=self.short_moves_speed,
+                                                          step_distance=self.long_move_distance,  # Use single long move to get filament out
+                                                          step_speed=self.long_moves_speed,
                                                           expect_partial_move=True)
             except self.printer.command_error:
                 raise FatalPrinterError(
