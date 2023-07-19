@@ -307,22 +307,22 @@ class ERCF(object):
 
     def cmd_ERCF_MOVE_SELECTOR_TO_TOOL(self, gcmd):
         with self._command_exception_handler(gcmd):
-            tool_idx = gcmd.get_int('TOOL')
+            tool_idx = int(gcmd.get("TOOL"))
             self.ercf_move_selector_to_tool(gcmd, tool_idx)
 
     def cmd_ERCF_CHANGE_TOOL(self, gcmd):
         with self._command_exception_handler(gcmd):
-            tool_idx = gcmd.get_int('TOOL')
+            tool_idx = int(gcmd.get("TOOL"))
             self.ercf_change_tool(gcmd, tool_idx)
 
     def cmd_ERCF_CALIBRATE_SELECTOR_LOCATION(self, gcmd):
         with self._command_exception_handler(gcmd):
-            tool_idx = gcmd.get_int('TOOL')
+            tool_idx = int(gcmd.get("TOOL"))
             self.calibrate_selector_location(gcmd, tool_idx)
 
     def cmd_ERCF_CALIBRATE_EXTRUSION_FACTOR(self, gcmd):
         with self._command_exception_handler(gcmd):
-            tool_idx = gcmd.get_int('TOOL')
+            tool_idx = int(gcmd.get("TOOL"))
             self.calibrate_extrusion_factor(gcmd, tool_idx)
 
     def cmd_CALIBRATE_GEAR_STEPPER_ROTATION_DISTANCE(self, gcmd):
