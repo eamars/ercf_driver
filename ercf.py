@@ -1275,7 +1275,7 @@ class ERCF(object):
                 actual_distance = self.toolhead_move_wait(gcmd, raise_on_filament_slip=False,
                                                           target_move_distance=self.all_variables.get('calibrated_nozzle_to_extruder_length') + self.extra_move_margin,
                                                           step_distance=self.long_move_distance,  # Use single long move to get filament out
-                                                          step_speed=self.long_moves_speed,
+                                                          step_speed=self.short_moves_speed,
                                                           expect_partial_move=True)
             except self.printer.command_error:
                 raise FatalPrinterError(
