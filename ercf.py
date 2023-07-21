@@ -830,7 +830,7 @@ class ERCF(object):
                 self.ercf_load_fresh(gcmd)
             else:
                 # Load to the nozzle
-                accumulated_step_distance += self.ercf_load_from_extruder_to_nozzle(gcmd, accumulated_step_distance)
+                accumulated_step_distance += self.ercf_load_from_extruder_to_nozzle(gcmd, self.short_move_distance)
 
         elif self.toolhead_sensor.runout_helper.filament_present:
             self.ercf_load_from_toolhead_sensor(gcmd)
@@ -964,7 +964,7 @@ class ERCF(object):
             self.ercf_load_from_toolhead_sensor(gcmd)
         else:
             # Blind move from extruder to nozzle
-            self.ercf_load_from_extruder_to_nozzle(gcmd, actual_distance)
+            self.ercf_load_from_extruder_to_nozzle(gcmd, self.short_move_distance)
 
     def is_filament_in_selector(self, lift_servo=True, skip_filament_block_check=False):
         with self._gear_stepper_move_guard(lift_servo):
